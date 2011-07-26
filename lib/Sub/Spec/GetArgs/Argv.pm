@@ -85,7 +85,11 @@ _
             summary => 'Strict mode',
             description => <<'_',
 
-If set to 0, will still return parsed argv even if there are parsing errors.
+If set to 0, will still return parsed argv even if there are parsing errors. If
+set to 1 (the default), will die upon error.
+
+Normally you would want to use strict mode, for more error checking. Setting off
+strict is used by, for example, Sub::Spec::BashComplete.
 
 _
             default => 1,

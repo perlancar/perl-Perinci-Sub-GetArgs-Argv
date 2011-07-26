@@ -104,7 +104,7 @@ _
     },
     result_naked => 1,
 };
-my $_pa_skip_check_required_args;
+our $_pa_skip_check_required_args;
 sub get_args_from_argv {
     require Getopt::Long;
     require YAML::Syck; $YAML::Syck::ImplicitTyping = 1;
@@ -120,6 +120,8 @@ sub get_args_from_argv {
     $log->tracef("-> get_args_from_argv(), argv=%s", $argv);
 
     my %go_spec;
+
+    $_pa_skip_check_required_args = 0;
 
     my $args = {};
     while (my ($name, $schema) = each %$args_spec) {
@@ -163,8 +165,6 @@ sub get_args_from_argv {
         next if $go_spec{$k} || $go_spec{"--$k"} || $args_spec->{$k_};
         $go_spec{$k} = $v;
     }
-
-    $_pa_skip_check_required_args = 0;
 
     $log->tracef("GetOptions rule: %s", \%go_spec);
     Getopt::Long::Configure(

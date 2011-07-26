@@ -1,0 +1,5 @@
+Revision history for Sub::Spec::GetArgs::Argv
+
+0.01     2011-07-26
+
+         First release, spun off from Sub::Spec::CmdLine.

@@ -167,10 +167,11 @@ sub get_args_from_argv {
     }
 
     $log->tracef("GetOptions rule: %s", \%go_spec);
-    Getopt::Long::Configure(
+    my $old_go_opts = Getopt::Long::Configure(
         $strict ? "no_pass_through" : "pass_through",
         "no_ignore_case", "permute");
     my $result = Getopt::Long::GetOptionsFromArray($argv, %go_spec);
+    Getopt::Long::Configure($old_go_opts);
     unless ($result) {
         die Object::BlankStr->new if $strict;
     }

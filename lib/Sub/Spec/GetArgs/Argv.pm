@@ -57,6 +57,21 @@ or
 
 VALUE will be parsed as YAML for nonscalar types.
 
+Argument aliases (~arg_aliases~) clause for each argument is also parsed. For
+example:
+
+: args => {
+:     argname => [bool => {
+:         summary => '...',
+:         arg_aliases => {
+:             a => {},
+:             arg => {},
+:         },
+:     }
+: }
+
+Then -a and --arg are also available in addition to --argname.
+
 This function also takes ~arg_pos~ and ~arg_greedy~ type clause in schema into
 account, for example:
 

@@ -1,5 +1,17 @@
 Revision history for Sub::Spec::GetArgs::Argv
 
+0.03     2011-07-29
+
+         [FIXES]
+
+         - (build) Add missing test dep: Data::Clone.
+
+         [ETC]
+
+         - Internally now uses Sub::Spec::GetArgs::Array to process arg_pos and
+           arg_greedy arg type clauses.
+
+
 0.02     2011-07-26
 
          No functional changes. Allow Sub::Spec::CmdLine to access an internal

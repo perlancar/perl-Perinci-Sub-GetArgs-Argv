@@ -6,6 +6,7 @@ use warnings;
 use Log::Any '$log';
 
 use Object::BlankStr;
+use Sub::Spec::GetArgs::Array qw(get_args_from_array);
 use Sub::Spec::Utils; # temp, for _parse_schema
 
 use Exporter;
@@ -72,8 +73,8 @@ example:
 
 Then -a and --arg are also available in addition to --argname.
 
-This function also takes ~arg_pos~ and ~arg_greedy~ type clause in schema into
-account, for example:
+This function also (using [[cpanmod:Sub::Spec::GetArgs::Array]]) groks ~arg_pos~
+and ~arg_greedy~ type clause, for example:
 
 : $SPEC{multiply2} = {
 :     summary => 'Multiply 2 numbers (a & b)',
@@ -196,23 +197,19 @@ sub get_args_from_argv {
     }
 
     # process arg_pos
-  ARGV:
-    for my $i (reverse 0..@$argv-1) {
-        while (my ($name, $schema) = each %$args_spec) {
-            my $ah0 = $schema->{attr_hashes}[0];
-            my $o = $ah0->{arg_pos};
-            if (defined($o) && $o == $i) {
-                if (defined($args->{$name})) {
+    if (@$argv) {
+        my $res = get_args_from_array();
+        if ($res->[0] != 200 && $strict) {
+            die "Error: extra argument(s): ".join(", ", @$argv)."\n";
+        } elsif ($res->[0] == 200) {
+            my $pos_args = $res->[2];
+            for my $name (keys %$pos_args) {
+                if (exists $args->{$name}) {
                     die "You specified option --$name but also argument #".
-                        ($i+1)."\n" if $strict;
+                        $args_spec->{$name}{attr_hashes}[0]{arg_pos}
+                            if $strict;
                 }
-                if ($ah0->{arg_greedy}) {
-                    $args->{$name} = [splice(@$argv, $i)];
-                    my $j = $i;
-                    last ARGV;
-                } else {
-                    $args->{$name} = splice(@$argv, $i, 1);
-                }
+                $args->{$name} = $pos_args->{$name};
             }
         }
     }

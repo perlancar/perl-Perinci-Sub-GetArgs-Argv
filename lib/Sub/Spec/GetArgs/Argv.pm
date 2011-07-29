@@ -198,7 +198,7 @@ sub get_args_from_argv {
 
     # process arg_pos
     if (@$argv) {
-        my $res = get_args_from_array();
+        my $res = get_args_from_array(array=>$argv, _args_spec=>$args_spec);
         if ($res->[0] != 200 && $strict) {
             die "Error: extra argument(s): ".join(", ", @$argv)."\n";
         } elsif ($res->[0] == 200) {

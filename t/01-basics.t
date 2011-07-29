@@ -122,7 +122,8 @@ sub test_getargs {
         my $eval_err = $@;
         diag "eval_err = $eval_err" if "$eval_err";
         if ($args{error}) {
-            ok($eval_err, "dies");
+            # check with ref() too, Object::BlankStr stringifies to "" == false
+            ok($eval_err || ref($eval_err), "dies");
         } else {
             is_deeply($res, $args{args}, "result")
                 or diag explain $res;

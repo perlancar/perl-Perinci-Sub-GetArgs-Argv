@@ -198,13 +198,17 @@ sub get_args_from_argv {
 
     # process arg_pos
     if (@$argv) {
-        my $res = get_args_from_array(array=>$argv, _args_spec=>$args_spec);
+        my $res = get_args_from_array(
+            array=>$argv, _args_spec=>$args_spec,
+        );
         if ($res->[0] != 200 && $strict) {
-            die "Error: extra argument(s): ".join(", ", @$argv)."\n";
+            die "Error: $res->[0] - $res->[1]\n";
         } elsif ($res->[0] == 200) {
             my $pos_args = $res->[2];
             for my $name (keys %$pos_args) {
-                if (exists $args->{$name}) {
+                # should've been exists(), but currently uses defined()
+                # because our Getopt::Long assigns undef to all opts
+                if (defined $args->{$name}) {
                     die "You specified option --$name but also argument #".
                         $args_spec->{$name}{attr_hashes}[0]{arg_pos}
                             if $strict;
@@ -212,13 +216,6 @@ sub get_args_from_argv {
                 $args->{$name} = $pos_args->{$name};
             }
         }
-    }
-
-    #$log->tracef("tmp args result (after arg_pos processing): %s, argv: %s",
-    #             $args, $argv);
-    if (@$argv) {
-        die "Error: extra argument(s): ".join(", ", @$argv)."\n"
-            if $strict;
     }
 
     # check required args & parse yaml/etc

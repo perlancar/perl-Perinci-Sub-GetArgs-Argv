@@ -60,7 +60,7 @@ test_getargs(spec=>$spec, argv=>['--arg1', '{foo: false}',
            name=>"yaml syntax error");
 
 {
-    my $extra;
+    my $extra = 0;
     test_getargs(spec=>$spec, argv=>[qw/--arg1 1 --arg2 2 --extra/],
                  extra_getopts=>{extra=>sub{$extra=5}},
                  args=>{arg1=>1, arg2=>2},
@@ -68,6 +68,16 @@ test_getargs(spec=>$spec, argv=>['--arg1', '{foo: false}',
                      is($extra, 5, "extra getopt is executed");
                  },
                  name=>"opt: extra_getopts",
+             );
+    $extra = 0;
+    test_getargs(spec=>$spec, argv=>[qw/--arg1 1 --arg2 2/],
+                 extra_getopts=>{"arg1=s"=>sub{$extra=1},
+                                 "--arg2=s"=>sub{$extra=2}},
+                 args=>{arg1=>1, arg2=>2},
+                 post_test=>sub {
+                     is($extra, 0, "clashing extra getopt is ignored");
+                 },
+                 name=>"opt: extra_getopts (2)",
              );
 }
 

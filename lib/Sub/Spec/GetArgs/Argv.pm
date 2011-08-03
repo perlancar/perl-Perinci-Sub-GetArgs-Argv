@@ -219,9 +219,15 @@ sub get_args_from_argv {
         }
     }
 
-    while (my ($k, $v) = each %$extra_go) {
-        my $k_ = $k; $k_ =~ s/-/_/g;
-        next if $go_spec{$k} || $go_spec{"--$k"} || $args_spec->{$k_};
+    while (my ($k0, $v) = each %$extra_go) {
+        my $k  = $k0; $k  =~ s/(.+)(?:=.+|!)/$1/; $k =~ s/^-+//;
+        my $k_ = $k ; $k_ =~ s/-/_/g;
+        if ($args_spec->{$k_} ||
+                grep {/^(?:--)?\Q$k\E(?:=|!|\z)/} keys %go_spec) {
+            $log->warnf("Extra getopt option %s (%s) clashes with ".
+                            "argument from spec, ignored", $k0, $k_);
+            next;
+        }
         $go_spec{$k} = $v;
     }
 

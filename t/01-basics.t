@@ -115,6 +115,13 @@ test_getargs(spec=>$spec, argv=>[qw/--foo-yaml ~/], per_arg_yaml=>1,
              args=>{foo=>undef},
              name=>"per_arg_yaml=1");
 
+{
+    local @ARGV = (qw/--foo 2/);
+    test_getargs(spec=>$spec,
+                 args=>{foo=>2},
+                 name=>"argv defaults to \@ARGV");
+}
+
 DONE_TESTING:
 done_testing();
 

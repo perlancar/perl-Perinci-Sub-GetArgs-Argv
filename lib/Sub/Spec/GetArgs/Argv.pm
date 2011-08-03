@@ -99,6 +99,7 @@ then on the command-line any of below is valid:
 _
     args => {
         argv => ['array*' => {
+            description => 'If not specified, defaults to @ARGV',
             of => 'str*',
         }],
         spec => ['hash*' => {
@@ -151,7 +152,7 @@ sub get_args_from_argv {
     require YAML::Syck; $YAML::Syck::ImplicitTyping = 1;
 
     my %input_args = @_;
-    my $argv      = $input_args{argv} or return [400, "Please specify argv"];
+    my $argv      = $input_args{argv} // \@ARGV;
     my $sub_spec  = $input_args{spec} or return [400, "Please specify spec"];
     my $args_spec = $sub_spec->{args} // {};
     $args_spec    = { map { $_ => _parse_schema($args_spec->{$_}) }

@@ -24,8 +24,8 @@ my $spec = {
 test_getargs(spec=>$spec, argv=>[qw/--arg1 1 --arg2 2/],
            args=>{arg1=>1, arg2=>2},
            name=>"optional missing = ok");
-test_getargs(spec=>$spec, argv=>[qw/--arg1 1 --arg2 2/],
-           args=>{arg1=>1, arg2=>2},
+test_getargs(spec=>$spec, argv=>[qw/--arg1 1 --arg2 2 --arg3 3/],
+           args=>{arg1=>1, arg2=>2, arg3=>3},
            name=>"optional given = ok");
 test_getargs(spec=>$spec, argv=>[qw/1 2/],
            args=>{arg1=>1, arg2=>2},
@@ -47,9 +47,6 @@ test_getargs(spec=>$spec, argv=>[qw/arg1/], error=>1,
            name=>"required missing = fails");
 test_getargs(spec=>$spec, argv=>[qw/--foo bar/], error=>1,
            name=>"unknown args given = fails");
-test_getargs(spec=>$spec, argv=>[qw/--arg1 1 --arg2 2/],
-           args=>{arg1=>1, arg2=>2},
-           name=>"optional missing = ok");
 
 test_getargs(spec=>$spec, argv=>['--arg1', '{foo: false}',
                                '--arg2', '',

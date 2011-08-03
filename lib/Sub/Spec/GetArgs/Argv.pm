@@ -219,6 +219,8 @@ sub get_args_from_argv {
         }
     }
 
+    # while we already handle arg/--arg and arg=s/arg! variation, we still
+    # haven't covered 'arg|alias' case
     while (my ($k0, $v) = each %$extra_go) {
         my $k  = $k0; $k  =~ s/(.+)(?:=.+|!)/$1/; $k =~ s/^-+//;
         my $k_ = $k ; $k_ =~ s/-/_/g;

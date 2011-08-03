@@ -103,6 +103,18 @@ test_getargs(name=>"dash alias for underscore (3)",
              error=>1,
          );
 
+$spec = {
+    args => {
+        foo => 'str',
+    },
+};
+test_getargs(spec=>$spec, argv=>[qw/--foo-yaml ~/],
+             error=>1,
+             name=>"per_arg_yaml=0");
+test_getargs(spec=>$spec, argv=>[qw/--foo-yaml ~/], per_arg_yaml=>1,
+             args=>{foo=>undef},
+             name=>"per_arg_yaml=1");
+
 DONE_TESTING:
 done_testing();
 
@@ -113,14 +125,14 @@ sub test_getargs {
         my $argv = clone($args{argv});
         my $res;
         my %input_args = (argv=>$argv, spec=>$args{spec});
-        $input_args{strict} = $args{strict} if defined $args{strict};
-        $input_args{extra_getopts} = $args{extra_getopts}
-            if defined $args{extra_getopts};
+        for (qw/strict extra_getopts per_arg_yaml/) {
+            $input_args{$_} = $args{$_} if defined $args{$_};
+        }
         eval {
             $res = get_args_from_argv(%input_args);
         };
         my $eval_err = $@;
-        diag "eval_err = $eval_err" if "$eval_err";
+        diag "eval_err = $eval_err" if $eval_err || ref($eval_err);
         if ($args{error}) {
             # check with ref() too, Object::BlankStr stringifies to "" == false
             ok($eval_err || ref($eval_err), "dies");

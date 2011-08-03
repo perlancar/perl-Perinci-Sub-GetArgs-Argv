@@ -40,23 +40,29 @@ line) and parsing of arg_pos and arg_greedy.
 
 * How this routine translates the args spec clause
 
-Bool types can be specified using
+Bool types can be specified using:
 
-: --argname
-
-or
-
-: --noargname
-
-All the other types can be specified using
-
-: --argname VALUE
+: --ARGNAME
 
 or
 
-: --argname=VALUE
+: --noARGNAME
 
-VALUE will be parsed as YAML for nonscalar types.
+All the other types can be specified using:
+
+: --ARGNAME VALUE
+
+or
+
+: --ARGNAME=VALUE
+
+VALUE will be parsed as YAML for nonscalar types (hash, array). If you want to
+force YAML parsing for scalar types (e.g. when you want to specify undef, *~* in
+YAML) you can use:
+
+: --ARGNAME-yaml=VALUE
+
+but you need to set *per_arg_yaml* to true.
 
 Argument aliases (~arg_aliases~) clause for each argument is also parsed. For
 example:
@@ -110,6 +116,19 @@ strict is used by, for example, Sub::Spec::BashComplete.
 _
             default => 1,
         }],
+        per_arg_yaml => ['bool' => {
+            summary => 'Whether to recognize --ARGNAME-yaml',
+            default => 0,
+            description_fmt => 'org',
+            description => <<'_',
+
+This is useful for example if you want to specify a value which is not
+expressible from the command-line, like *undef*.
+
+: script.pl --name-yaml '~'
+
+_
+        }],
         extra_getopts => ['hash' => {
             summary => 'Specify extra Getopt::Long specification',
             description => <<'_',
@@ -126,6 +145,8 @@ _
 };
 our $_pa_skip_check_required_args;
 sub get_args_from_argv {
+    # we are trying to shave off startup overhead, so only load modules when
+    # about to be used
     require Getopt::Long;
     require YAML::Syck; $YAML::Syck::ImplicitTyping = 1;
 
@@ -137,6 +158,7 @@ sub get_args_from_argv {
                           keys %$args_spec };
     my $strict    = $input_args{strict} // 1;
     my $extra_go  = $input_args{extra_getopts} // {};
+    my $per_arg_yaml = $input_args{per_arg_yaml} // 0;
     $log->tracef("-> get_args_from_argv(), argv=%s", $argv);
 
     my %go_spec;
@@ -148,14 +170,30 @@ sub get_args_from_argv {
         my $opt;
         my @name = ($name);
         push @name, $name if $name =~ s/_/-/g; # allow --foo_bar and --foo-bar
-        for (@name) {
+        for my $name (@name) {
             if ($schema->{type} eq 'bool') {
-                $opt = "$_!";
+                $opt = "$name!";
             } else {
-                $opt = "$_=s";
+                $opt = "$name=s";
             }
-            #$go_spec{$opt} = sub { $args->{$name[0]} = $_[0] };
-            $go_spec{$opt} = \$args->{$name[0]};
+            # why we use coderefs here? due to getopt::long's behavior. when
+            # @ARGV=qw() and go_spec is ('foo=s' => \$opts{foo}) then %opts will
+            # become (foo=>undef). but if go_spec is ('foo=s' => sub {
+            # $opts{foo} = $_[1] }) then %opts will become (), which is what we
+            # prefer, so we can later differentiate "unspecified"
+            # (exists($opts{foo} == false) and "specified as undef"
+            # (exists($opts{foo}) == true but defined($opts{foo}) == false).
+            $go_spec{$opt} = sub { $args->{$name[0]} = $_[1] };
+            if ($per_arg_yaml && $schema->{type} ne 'bool') {
+                $go_spec{"$name-yaml=s"} = sub {
+                    my $decoded;
+                    eval { $decoded = YAML::Syck::Load($_[1]) };
+                    my $eval_err = $@;
+                    die "Invalid YAML in option --$name-yaml: $_[1]: $eval_err"
+                        if $eval_err;
+                    $args->{$name[0]} = $decoded;
+                };
+            }
         }
         my $aliases = $schema->{attr_hashes}[0]{arg_aliases};
         if ($aliases) {
@@ -206,9 +244,7 @@ sub get_args_from_argv {
         } elsif ($res->[0] == 200) {
             my $pos_args = $res->[2];
             for my $name (keys %$pos_args) {
-                # should've been exists(), but currently uses defined()
-                # because our Getopt::Long assigns undef to all opts
-                if (defined $args->{$name}) {
+                if (exists $args->{$name}) {
                     die "You specified option --$name but also argument #".
                         $args_spec->{$name}{attr_hashes}[0]{arg_pos}
                             if $strict;
@@ -222,7 +258,7 @@ sub get_args_from_argv {
     unless ($_pa_skip_check_required_args) {
         while (my ($name, $schema) = each %$args_spec) {
             if ($schema->{attr_hashes}[0]{required} &&
-                    !defined($args->{$name})) {
+                    !exists($args->{$name})) {
                 die "Missing required argument: $name\n" if $strict;
             }
             my $parse_yaml;
@@ -248,11 +284,6 @@ sub get_args_from_argv {
 
             # XXX special parsing of type = date, accept
         }
-    }
-
-    # cleanup undefined args
-    for (keys %$args) {
-        delete $args->{$_} unless defined($args->{$_});
     }
 
     $log->tracef("<- get_args_from_argv(), args=%s, remaining argv=%s",

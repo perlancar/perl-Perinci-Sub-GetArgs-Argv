@@ -1,5 +1,13 @@
 Revision history for Sub::Spec::GetArgs::Argv
 
+0.04     2011-08-03
+
+         [NEW FEATURES]
+
+         - Added per_arg_yaml option to allow specifying YAML for scalar types,
+           e.g. --name-yaml '~'.
+
+
 0.03     2011-07-29
 
          [FIXES]

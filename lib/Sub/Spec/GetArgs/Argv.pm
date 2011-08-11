@@ -313,8 +313,8 @@ __END__
 
 =head1 DESCRIPTION
 
-This module provides get_args_from_argv(), which parses command line arguments
-(@ARGV) into subroutine arguments (%args). This module is used by
+This module provides C<get_args_from_argv()>, which parses command line arguments
+(C<@ARGV>) into subroutine arguments (C<%args>). This module is used by
 L<Sub::Spec::CmdLine>.
 
 This module uses L<Log::Any> for logging framework.
@@ -335,5 +335,13 @@ None are exported by default, but they are exportable.
 L<Sub::Spec>
 
 L<Sub::Spec::CmdLine>
+
+=head1 AUTHOR
+
+TODO
+
+=head1 COPYRIGHT & LICENSE
+
+TODO
 
 =cut

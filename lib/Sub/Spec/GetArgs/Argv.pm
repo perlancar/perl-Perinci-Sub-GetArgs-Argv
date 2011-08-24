@@ -196,7 +196,7 @@ sub get_args_from_argv {
                 };
             }
         }
-        my $aliases = $schema->{attr_hashes}[0]{arg_aliases};
+        my $aliases = $schema->{clause_sets}[0]{arg_aliases};
         if ($aliases) {
             while (my ($alias, $alinfo) = each %$aliases) {
                 my $opt;
@@ -255,7 +255,7 @@ sub get_args_from_argv {
             for my $name (keys %$pos_args) {
                 if (exists $args->{$name}) {
                     die "You specified option --$name but also argument #".
-                        $args_spec->{$name}{attr_hashes}[0]{arg_pos}
+                        $args_spec->{$name}{clause_sets}[0]{arg_pos}
                             if $strict;
                 }
                 $args->{$name} = $pos_args->{$name};
@@ -266,7 +266,7 @@ sub get_args_from_argv {
     # check required args & parse yaml/etc
     unless ($_pa_skip_check_required_args) {
         while (my ($name, $schema) = each %$args_spec) {
-            if ($schema->{attr_hashes}[0]{required} &&
+            if ($schema->{clause_sets}[0]{required} &&
                     !exists($args->{$name})) {
                 die "Missing required argument: $name\n" if $strict;
             }

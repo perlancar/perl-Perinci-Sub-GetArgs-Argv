@@ -1,5 +1,10 @@
 Revision history for Sub::Spec::GetArgs::Argv
 
+0.05     2011-08-25
+
+         No functional changes. Update to Sub::Spec 0.15.
+
+
 0.04     2011-08-03
 
          [NEW FEATURES]

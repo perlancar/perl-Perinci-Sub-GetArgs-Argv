@@ -1,5 +1,11 @@
 Revision history for Sub::Spec::GetArgs::Argv
 
+0.06     2011-08-31
+
+         No functional changes. Updated because _parse_schema() is moved from
+         Sub::Spec::Utils to Data::Sah::Util.
+
+
 0.05     2011-08-25
 
          No functional changes. Update to Sub::Spec 0.15.

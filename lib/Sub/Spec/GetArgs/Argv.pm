@@ -5,9 +5,9 @@ use strict;
 use warnings;
 use Log::Any '$log';
 
+use Data::Sah::Util;
 use Object::BlankStr;
 use Sub::Spec::GetArgs::Array qw(get_args_from_array);
-use Sub::Spec::Utils; # temp, for _parse_schema
 
 use Exporter;
 our @ISA = qw(Exporter);
@@ -18,7 +18,7 @@ our @EXPORT_OK = qw(get_args_from_argv);
 our %SPEC;
 
 sub _parse_schema {
-    Sub::Spec::Utils::_parse_schema(@_);
+    Data::Sah::Util::_parse_schema(@_);
 }
 
 $SPEC{get_args_from_argv} = {

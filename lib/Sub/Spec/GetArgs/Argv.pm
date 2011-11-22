@@ -5,7 +5,7 @@ use strict;
 use warnings;
 use Log::Any '$log';
 
-use Data::Sah::Util;
+use Data::Sah;
 use Object::BlankStr;
 use Sub::Spec::GetArgs::Array qw(get_args_from_array);
 
@@ -18,7 +18,7 @@ our @EXPORT_OK = qw(get_args_from_argv);
 our %SPEC;
 
 sub _parse_schema {
-    Data::Sah::Util::_parse_schema(@_);
+    Data::Sah::normalize_schema($_[0]);
 }
 
 $SPEC{get_args_from_argv} = {

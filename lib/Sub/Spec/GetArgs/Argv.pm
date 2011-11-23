@@ -266,7 +266,7 @@ sub get_args_from_argv {
     # check required args & parse yaml/etc
     unless ($_pa_skip_check_required_args) {
         while (my ($name, $schema) = each %$args_spec) {
-            if ($schema->{clause_sets}[0]{required} &&
+            if ($schema->{clause_sets}[0]{req} &&
                     !exists($args->{$name})) {
                 die "Missing required argument: $name\n" if $strict;
             }

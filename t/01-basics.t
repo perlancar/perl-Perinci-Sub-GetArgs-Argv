@@ -43,7 +43,8 @@ test_getargs(spec=>$spec, argv=>[qw/--arg1 1 --arg2 2 3/], error=>1,
 test_getargs(spec=>$spec, argv=>[qw/1 2 3/], error=>1,
            name=>"extra args given = fails (2)");
 
-test_getargs(spec=>$spec, argv=>[qw/arg1/], error=>1,
+diag "---";
+test_getargs(spec=>$spec, argv=>[qw//], error=>1,
            name=>"required missing = fails");
 test_getargs(spec=>$spec, argv=>[qw/--foo bar/], error=>1,
            name=>"unknown args given = fails");

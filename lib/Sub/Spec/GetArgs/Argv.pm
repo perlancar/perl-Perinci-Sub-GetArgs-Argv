@@ -313,6 +313,12 @@ __END__
 
 =head1 DESCRIPTION
 
+B<NOTICE>: This module and the L<Sub::Spec> standard is deprecated as of Jan
+2012. L<Rinci> is the new specification to replace Sub::Spec, it is about 95%
+compatible with Sub::Spec, but corrects a few issues and is more generic.
+C<Perinci::*> is the Perl implementation for Rinci and many of its modules can
+handle existing Sub::Spec sub specs.
+
 This module provides C<get_args_from_argv()>, which parses command line
 arguments (C<@ARGV>) into subroutine arguments (C<%args>). This module is used
 by L<Sub::Spec::CmdLine>.

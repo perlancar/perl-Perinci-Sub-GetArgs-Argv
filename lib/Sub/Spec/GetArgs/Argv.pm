@@ -172,7 +172,7 @@ sub get_args_from_argv {
         my @name = ($name);
         push @name, $name if $name =~ s/_/-/g; # allow --foo_bar and --foo-bar
         for my $name (@name) {
-            if ($schema->{type} eq 'bool') {
+            if ($schema->[0] eq 'bool') {
                 $opt = "$name!";
             } else {
                 $opt = "$name=s";
@@ -185,7 +185,7 @@ sub get_args_from_argv {
             # (exists($opts{foo} == false) and "specified as undef"
             # (exists($opts{foo}) == true but defined($opts{foo}) == false).
             $go_spec{$opt} = sub { $args->{$name[0]} = $_[1] };
-            if ($per_arg_yaml && $schema->{type} ne 'bool') {
+            if ($per_arg_yaml && $schema->[0] ne 'bool') {
                 $go_spec{"$name-yaml=s"} = sub {
                     my $decoded;
                     eval { $decoded = YAML::Syck::Load($_[1]) };
@@ -196,11 +196,11 @@ sub get_args_from_argv {
                 };
             }
         }
-        my $aliases = $schema->{clause_sets}[0]{arg_aliases};
+        my $aliases = $schema->[1]{arg_aliases};
         if ($aliases) {
             while (my ($alias, $alinfo) = each %$aliases) {
                 my $opt;
-                if ($schema->{type} eq 'bool') {
+                if ($schema->[0] eq 'bool') {
                     $opt = "$alias!";
                 } else {
                     $opt = "$alias=s";
@@ -266,12 +266,12 @@ sub get_args_from_argv {
     # check required args & parse yaml/etc
     unless ($_pa_skip_check_required_args) {
         while (my ($name, $schema) = each %$args_spec) {
-            if ($schema->{clause_sets}[0]{req} &&
+            if ($schema->[1]{req} &&
                     !exists($args->{$name})) {
                 die "Missing required argument: $name\n" if $strict;
             }
             my $parse_yaml;
-            my $type = $schema->{type};
+            my $type = $schema->[0];
             # XXX more proper checking, e.g. check any/all recursively for
             # nonscalar types. check base type.
             $log->tracef("name=%s, arg=%s, parse_yaml=%s",

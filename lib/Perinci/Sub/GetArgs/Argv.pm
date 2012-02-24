@@ -131,7 +131,8 @@ _
     },
 };
 
-# this is an internal flag used by XXX to bypassa checking required args
+# this is an internal flag used by Perinci::CmdLine to bypass checking required
+# args
 our $_pa_skip_check_required_args;
 
 sub get_args_from_argv {

@@ -222,7 +222,7 @@ sub get_args_from_argv {
     }
 
     # 3. then we try to fill $args from remaining command-line arguments (for
-    # args which have 'opts' spec specified)
+    # args which have 'pos' spec specified)
 
     if (@$argv) {
         my $res = get_args_from_array(

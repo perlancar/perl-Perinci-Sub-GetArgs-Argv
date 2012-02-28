@@ -167,12 +167,23 @@ sub get_args_from_argv {
         my $go_opt;
         my @name = ($a);
         push @name, $a if $a =~ s/_/-/g; # allow --foo_bar and --foo-bar
-        for my $name (@name) {
-            if ($as->{schema}[0] eq 'bool') {
-                $go_opt = "$name!";
+        my $name2go_opt = sub {
+            my ($name, $schema) = @_;
+            if ($schema->[0] eq 'bool') {
+                if (length($name) == 1 || $schema->[1]{is}) {
+                    # single-letter option like -b doesn't get --nob.
+                    # [bool=>{is=>1}] also means it's a flag and should not get
+                    # --nofoo.
+                    return $name;
+                } else {
+                    return "$name!";
+                }
             } else {
-                $go_opt = "$name=s";
+                return "$name=s";
             }
+        };
+        for my $name (@name) {
+            $go_opt = $name2go_opt->($name, $as->{schema});
             # why we use coderefs here? due to getopt::long's behavior. when
             # @ARGV=qw() and go_spec is ('foo=s' => \$opts{foo}) then %opts will
             # become (foo=>undef). but if go_spec is ('foo=s' => sub {
@@ -191,6 +202,19 @@ sub get_args_from_argv {
                         if $eval_err;
                     $args->{$name[0]} = $decoded;
                 };
+            }
+
+            # parse argv_aliases
+            if ($as->{cmdline_aliases}) {
+                while (my ($al, $alspec) = each %{$as->{cmdline_aliases}}) {
+                    $go_opt = $name2go_opt->(
+                        $al, $alspec->{schema} // $as->{schema});
+                    if ($alspec->{code}) {
+                        $go_spec{$go_opt} = sub { $alspec->{code}->($args) };
+                    } else {
+                        $go_spec{$go_opt} = sub { $args->{$name[0]} = $_[1] };
+                    }
+                }
             }
         }
     }

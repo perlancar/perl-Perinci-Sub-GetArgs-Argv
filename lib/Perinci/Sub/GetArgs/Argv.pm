@@ -182,7 +182,10 @@ sub get_args_from_argv {
                 return "$name=s";
             }
         };
+        my $name0;
         for my $name (@name) {
+            unless (defined $name0) { $name0 = $name }
+            $name =~ s/\./-/g;
             $go_opt = $name2go_opt->($name, $as->{schema});
             # why we use coderefs here? due to getopt::long's behavior. when
             # @ARGV=qw() and go_spec is ('foo=s' => \$opts{foo}) then %opts will
@@ -191,7 +194,7 @@ sub get_args_from_argv {
             # prefer, so we can later differentiate "unspecified"
             # (exists($opts{foo}) == false) and "specified as undef"
             # (exists($opts{foo}) == true but defined($opts{foo}) == false).
-            $go_spec{$go_opt} = sub { $args->{$name[0]} = $_[1] };
+            $go_spec{$go_opt} = sub { $args->{$name0} = $_[1] };
             if ($per_arg_yaml && $as->{schema}[0] ne 'bool') {
                 $go_spec{"$name-yaml=s"} = sub {
                     my $decoded;
@@ -200,7 +203,7 @@ sub get_args_from_argv {
                     return [500, "Invalid YAML in option --$name-yaml: ".
                                 "$_[1]: $eval_err"]
                         if $eval_err;
-                    $args->{$name[0]} = $decoded;
+                    $args->{$name0} = $decoded;
                 };
             }
 
@@ -212,7 +215,7 @@ sub get_args_from_argv {
                     if ($alspec->{code}) {
                         $go_spec{$go_opt} = sub { $alspec->{code}->($args) };
                     } else {
-                        $go_spec{$go_opt} = sub { $args->{$name[0]} = $_[1] };
+                        $go_spec{$go_opt} = sub { $args->{$name0} = $_[1] };
                     }
                 }
             }

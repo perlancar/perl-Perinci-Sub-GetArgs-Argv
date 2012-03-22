@@ -333,11 +333,6 @@ This module uses L<Log::Any> for logging framework.
 This module has L<Rinci> metadata.
 
 
-=head1 FUNCTIONS
-
-None are exported by default, but they are exportable.
-
-
 =head1 FAQ
 
 

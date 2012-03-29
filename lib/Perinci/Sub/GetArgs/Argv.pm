@@ -233,7 +233,7 @@ sub get_args_from_argv {
                             "argument from metadata, ignored", $k0, $k_);
             next;
         }
-        $go_spec{$k} = $v;
+        $go_spec{$k0} = $v;
     }
 
     # 2. then we run GetOptions to fill $args from command-line opts

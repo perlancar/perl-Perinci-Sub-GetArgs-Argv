@@ -102,6 +102,24 @@ test_getargs(meta=>$meta,
        );
 
 $meta = {
+    v=>1.1,
+    args=>{arg1=>{schema=>'str*', req=>1, pos=>0}},
+};
+
+test_getargs(meta=>$meta,
+             argv=>[qw//],
+             #check_required_args=>1, # the default
+             error=>1,
+             name=>"opt: check_required_args=1",
+         );
+test_getargs(meta=>$meta,
+             argv=>[qw//],
+             check_required_args=>0,
+             args=>{},
+             name=>"opt: check_required_args=0",
+         );
+
+$meta = {
     v => 1.1,
     args => {
         foo_bar_baz => {schema=>'int'},
@@ -192,7 +210,8 @@ sub test_getargs {
         my $argv = clone($args{argv});
         my $res;
         my %input_args = (argv=>$argv, meta=>$args{meta});
-        for (qw/strict extra_getopts_before extra_getopts_after per_arg_yaml/) {
+        for (qw/strict check_required_args
+                extra_getopts_before extra_getopts_after per_arg_yaml/) {
             $input_args{$_} = $args{$_} if defined $args{$_};
         }
         $res = get_args_from_argv(%input_args);

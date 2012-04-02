@@ -26,7 +26,7 @@ $SPEC{get_args_from_argv} = {
 Using information in function metadata's 'args' property, parse command line
 arguments '@argv' into hash '%args', suitable for passing into subs.
 
-Uses Getopt::Long's GetOptions to parse the result.
+Currently uses Getopt::Long's GetOptions to do the parsing.
 
 As with GetOptions, this function modifies its 'argv' argument.
 
@@ -116,18 +116,34 @@ expressible from the command-line, like 'undef'.
 
 _
         },
-        extra_getopts => {
+        extra_getopts_before => {
             schema => ['hash' => {}],
             summary => 'Specify extra Getopt::Long specification',
             description => <<'_',
 
-If specified, add extra Getopt::Long specification (as long as it doesn't clash
-with spec arg). This is used, for example, by Perinci::CmdLine::run() to add
-general options --help, --version, --list, etc so it can mixed with spec arg
-options, for convenience.
+If specified, insert extra Getopt::Long specification. This is used, for
+example, by Perinci::CmdLine::run() to add general options --help, --version,
+--list, etc so it can mixed with spec arg options, for convenience.
+
+Since the extra specification is put at the front (before function arguments
+specification), the extra options will not be able to override function
+arguments (this is how Getopt::Long works). For example, if extra specification
+contains --help, and one of function arguments happens to be 'help', the extra
+specification won't have any effect.
 
 _
-        }
+        },
+        extra_getopts_after => {
+            schema => ['hash' => {}],
+            summary => 'Specify extra Getopt::Long specification',
+            description => <<'_',
+
+Just like *extra_getopts_before*, but the extra specification is put _after_
+function arguments specification so extra options can override function
+arguments.
+
+_
+        },
     },
 };
 
@@ -145,7 +161,8 @@ sub get_args_from_argv {
         unless $v == 1.1;
     my $args_p     = clone($meta->{args} // {});
     my $strict     = $input_args{strict} // 1;
-    my $extra_go   = $input_args{extra_getopts} // {};
+    my $extra_go_b = $input_args{extra_getopts_before} // {};
+    my $extra_go_a = $input_args{extra_getopts_after} // {};
     my $per_arg_yaml = $input_args{per_arg_yaml} // 0;
     $log->tracef("-> get_args_from_argv(), argv=%s", $argv);
 
@@ -216,27 +233,14 @@ sub get_args_from_argv {
         }
     }
 
-    # while we already handle arg/--arg and arg=s/arg! variation, we still
-    # haven't covered 'arg|alias' case
-    while (my ($k0, $v) = each %$extra_go) {
-        my $k  = $k0; $k  =~ s/(.+)(?:=.+|!)/$1/; $k =~ s/^-+//;
-        my $k_ = $k ; $k_ =~ s/-/_/g;
-        if ($args_p->{$k_} ||
-                grep {/^(?:--)?\Q$k\E(?:=|!|\z)/} keys %go_spec) {
-            $log->warnf("Extra getopt option %s (%s) clashes with ".
-                            "argument from metadata, ignored", $k0, $k_);
-            next;
-        }
-        $go_spec{$k0} = $v;
-    }
-
     # 2. then we run GetOptions to fill $args from command-line opts
 
-    $log->tracef("GetOptions spec: %s", \%go_spec);
+    my @go_spec = (%$extra_go_b, %go_spec, %$extra_go_a);
+    $log->tracef("GetOptions spec: %s", \@go_spec);
     my $old_go_opts = Getopt::Long::Configure(
         $strict ? "no_pass_through" : "pass_through",
         "no_ignore_case", "permute");
-    my $result = Getopt::Long::GetOptionsFromArray($argv, %go_spec);
+    my $result = Getopt::Long::GetOptionsFromArray($argv, @go_spec);
     Getopt::Long::Configure($old_go_opts);
     unless ($result) {
         return [500, "GetOptions failed"] if $strict;

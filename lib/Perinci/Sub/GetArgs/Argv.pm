@@ -131,10 +131,6 @@ _
     },
 };
 
-# this is an internal flag used by Perinci::CmdLine to bypass checking required
-# args
-our $_pa_skip_check_required_args;
-
 sub get_args_from_argv {
     # we are trying to shave off startup overhead, so only load modules when
     # about to be used
@@ -157,8 +153,6 @@ sub get_args_from_argv {
     my $args = {};
 
     my %go_spec;
-
-    $_pa_skip_check_required_args = 0;
 
     # 1. first we form Getopt::Long spec
 
@@ -271,39 +265,37 @@ sub get_args_from_argv {
 
     # 4. check required args & parse yaml/etc
 
-    unless ($_pa_skip_check_required_args) {
-        while (my ($a, $as) = each %$args_p) {
-            if ($as->{req} &&
-                    !exists($args->{$a})) {
-                return [400, "Missing required argument: $a"] if $strict;
-            }
-            my $parse_yaml;
-            my $type = $as->{schema}[0];
-            # XXX more proper checking, e.g. check any/all recursively for
-            # nonscalar types. check base type.
-            $log->tracef("name=%s, arg=%s, parse_yaml=%s",
-                         $a, $args->{$a}, $parse_yaml);
-            $parse_yaml++ unless $type =~ /^(str|num|int|float|bool)$/;
-            if ($parse_yaml && defined($args->{$a})) {
-                if (ref($args->{$a}) eq 'ARRAY') {
-                    # XXX check whether each element needs to be YAML or not
-                    eval {
-                        $args->{$a} = [
-                            map { YAML::Syck::Load($_) } @{$args->{$a}}
-                        ];
-                    };
-                    return [500, "Invalid YAML in arg '$a': $@"] if $@;
-                } elsif (!ref($args->{$a})) {
-                    eval { $args->{$a} = YAML::Syck::Load($args->{$a}) };
-                    return [500, "Invalid YAML in arg '$a': $@"] if $@;
-                } else {
-                    return [500, "BUG: Why is \$args->{$a} ".
-                                ref($args->{$a})."?"];
-                }
-            }
-
-            # XXX special parsing of type = date
+    while (my ($a, $as) = each %$args_p) {
+        if ($as->{req} &&
+                !exists($args->{$a})) {
+            return [400, "Missing required argument: $a"] if $strict;
         }
+        my $parse_yaml;
+        my $type = $as->{schema}[0];
+        # XXX more proper checking, e.g. check any/all recursively for
+        # nonscalar types. check base type.
+        $log->tracef("name=%s, arg=%s, parse_yaml=%s",
+                     $a, $args->{$a}, $parse_yaml);
+        $parse_yaml++ unless $type =~ /^(str|num|int|float|bool)$/;
+        if ($parse_yaml && defined($args->{$a})) {
+            if (ref($args->{$a}) eq 'ARRAY') {
+                # XXX check whether each element needs to be YAML or not
+                eval {
+                    $args->{$a} = [
+                        map { YAML::Syck::Load($_) } @{$args->{$a}}
+                    ];
+                };
+                return [500, "Invalid YAML in arg '$a': $@"] if $@;
+            } elsif (!ref($args->{$a})) {
+                eval { $args->{$a} = YAML::Syck::Load($args->{$a}) };
+                return [500, "Invalid YAML in arg '$a': $@"] if $@;
+            } else {
+                return [500, "BUG: Why is \$args->{$a} ".
+                            ref($args->{$a})."?"];
+            }
+        }
+
+        # XXX special parsing of type = date
     }
 
     $log->tracef("<- get_args_from_argv(), args=%s, remaining argv=%s",

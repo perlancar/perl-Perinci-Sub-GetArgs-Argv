@@ -125,6 +125,26 @@ expressible from the command-line, like 'undef'.
 
     % script.pl --name-yaml '~'
 
+See also: per_arg_json. You should enable just one instead of turning on both.
+
+_
+        },
+        per_arg_json => {
+            schema => ['bool' => {default=>0}],
+            summary => 'Whether to recognize --ARGNAME-json',
+            description => <<'_',
+
+This is useful for example if you want to specify a value which is not
+expressible from the command-line, like 'undef'.
+
+    % script.pl --name-json 'null'
+
+But every other string will need to be quoted:
+
+    % script.pl --name-json '"foo"'
+
+See also: per_arg_yaml. You should enable just one instead of turning on both.
+
 _
         },
         extra_getopts_before => {
@@ -162,7 +182,6 @@ sub get_args_from_argv {
     # we are trying to shave off startup overhead, so only load modules when
     # about to be used
     require Getopt::Long;
-    require YAML::Syck; $YAML::Syck::ImplicitTyping = 1;
 
     my %input_args = @_;
     my $argv       = $input_args{argv} // \@ARGV;
@@ -175,6 +194,7 @@ sub get_args_from_argv {
     my $extra_go_b = $input_args{extra_getopts_before} // [];
     my $extra_go_a = $input_args{extra_getopts_after} // [];
     my $per_arg_yaml = $input_args{per_arg_yaml} // 0;
+    my $per_arg_json = $input_args{per_arg_json} // 0;
     $log->tracef("-> get_args_from_argv(), argv=%s", $argv);
 
     # the resulting args
@@ -217,8 +237,21 @@ sub get_args_from_argv {
             # (exists($opts{foo}) == false) and "specified as undef"
             # (exists($opts{foo}) == true but defined($opts{foo}) == false).
             push @go_spec, $go_opt => sub { $args->{$arg_key} = $_[1] };
+            if ($per_arg_json && $as->{schema}[0] ne 'bool') {
+                push @go_spec, "$name-json=s" => sub {
+                    require JSON;
+                    my $decoded;
+                    eval { $decoded = JSON->new->allow_nonref->decode($_[1]) };
+                    my $eval_err = $@;
+                    return [500, "Invalid JSON in option --$name-json: ".
+                                "$_[1]: $eval_err"]
+                        if $eval_err;
+                    $args->{$arg_key} = $decoded;
+                };
+            }
             if ($per_arg_yaml && $as->{schema}[0] ne 'bool') {
                 push @go_spec, "$name-yaml=s" => sub {
+                    require YAML::Syck; local $YAML::Syck::ImplicitTyping = 1;
                     my $decoded;
                     eval { $decoded = YAML::Syck::Load($_[1]) };
                     my $eval_err = $@;
@@ -278,7 +311,7 @@ sub get_args_from_argv {
         }
     }
 
-    # 4. check required args & parse yaml/etc
+    # 4. check required args & parse json/yaml/etc
 
     if ($input_args{check_required_args} // 1) {
         while (my ($a, $as) = each %$args_p) {
@@ -286,25 +319,39 @@ sub get_args_from_argv {
                     !exists($args->{$a})) {
                 return [400, "Missing required argument: $a"] if $strict;
             }
-            my $parse_yaml;
+            my $parse_json_or_yaml;
             my $type = $as->{schema}[0];
             # XXX more proper checking, e.g. check any/all recursively for
             # nonscalar types. check base type.
-            $log->tracef("name=%s, arg=%s, parse_yaml=%s",
-                         $a, $args->{$a}, $parse_yaml);
-            $parse_yaml++ unless $type =~ /^(str|num|int|float|bool)$/;
-            if ($parse_yaml && defined($args->{$a})) {
+            $log->tracef("name=%s, arg=%s, parse_json_or_yaml=%s",
+                         $a, $args->{$a}, $parse_json_or_yaml);
+            $parse_json_or_yaml++ unless $type =~ /^(str|num|int|float|bool)$/;
+            if ($parse_json_or_yaml && defined($args->{$a})) {
+                require JSON;
+                require YAML::Syck; local $YAML::Syck::ImplicitTyping = 1;
                 if (ref($args->{$a}) eq 'ARRAY') {
-                    # XXX check whether each element needs to be YAML or not
+                    # XXX check whether each element needs to be YAML/JSON / not
+                    eval {
+                        $args->{$a} = [
+                            map { JSON->new->allow_nonref->decode($_) }
+                                @{$args->{$a}}
+                        ];
+                    };
+                    my $ej = $@;
                     eval {
                         $args->{$a} = [
                             map { YAML::Syck::Load($_) } @{$args->{$a}}
                         ];
-                    };
-                    return [500, "Invalid YAML in arg '$a': $@"] if $@;
+                    } if $ej;
+                    my $ey = $@;
+                    return [500, "Invalid YAML/JSON in arg '$a'"] if $ej && $ey;
                 } elsif (!ref($args->{$a})) {
-                    eval { $args->{$a} = YAML::Syck::Load($args->{$a}) };
-                    return [500, "Invalid YAML in arg '$a': $@"] if $@;
+                    eval { $args->{$a} = JSON->new->allow_nonref->decode(
+                        $args->{$a}) };
+                    my $ej = $@;
+                    eval { $args->{$a} = YAML::Syck::Load($args->{$a}) } if $ej;
+                    my $ey = $@;
+                    return [500, "Invalid YAML/JSON in arg '$a'"] if $ej && $ey;
                 } else {
                     return [500, "BUG: Why is \$args->{$a} ".
                                 ref($args->{$a})."?"];

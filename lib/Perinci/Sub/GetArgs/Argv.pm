@@ -175,6 +175,18 @@ arguments.
 
 _
         },
+        allow_extra_elems => {
+            schema => ['bool' => {default=>0}],
+            summary => 'Allow extra/unassigned elements in argv',
+            description => <<'_',
+
+If set to 1, then if there are array elements unassigned to one of the
+arguments, instead of generating an error, the function will just ignore them.
+
+This option will be passed to Perinci::Sub::GetArgs::Array's allow_extra_elems.
+
+_
+        },
     },
 };
 
@@ -195,6 +207,7 @@ sub get_args_from_argv {
     my $extra_go_a = $input_args{extra_getopts_after} // [];
     my $per_arg_yaml = $input_args{per_arg_yaml} // 0;
     my $per_arg_json = $input_args{per_arg_json} // 0;
+    my $allow_extra_elems = $input_args{allow_extra_elems} // 0;
     $log->tracef("-> get_args_from_argv(), argv=%s", $argv);
 
     # the resulting args
@@ -296,6 +309,7 @@ sub get_args_from_argv {
     if (@$argv) {
         my $res = get_args_from_array(
             array=>$argv, _args_p=>$args_p,
+            allow_extra_elems => $allow_extra_elems,
         );
         if ($res->[0] != 200 && $strict) {
             return [500, "Get args from array failed: $res->[0] - $res->[1]"];

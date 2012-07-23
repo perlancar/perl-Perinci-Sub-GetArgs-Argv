@@ -187,6 +187,22 @@ This option will be passed to Perinci::Sub::GetArgs::Array's allow_extra_elems.
 
 _
         },
+        on_missing_required_args => {
+            schema => 'code',
+            summary => 'Execute code when there is missing required args',
+            description => <<'_',
+
+This can be used to give a chance to supply argument value from other sources if
+not specified by command-line options. Perinci::CmdLine, for example, uses this
+hook to supply value from STDIN or file contents (if argument has `cmdline_src`
+specification key set).
+
+This hook will be called for each missing argument. It will be supplied hash
+arguments: (arg => $the_missing_argument_name, args =>
+$the_resulting_args_so_far, spec => $the_arg_spec).
+
+_
+        },
     },
 };
 
@@ -208,6 +224,7 @@ sub get_args_from_argv {
     my $per_arg_yaml = $input_args{per_arg_yaml} // 0;
     my $per_arg_json = $input_args{per_arg_json} // 0;
     my $allow_extra_elems = $input_args{allow_extra_elems} // 0;
+    my $on_missing = $input_args{on_missing_required_args};
     $log->tracef("-> get_args_from_argv(), argv=%s", $argv);
 
     # the resulting args
@@ -329,9 +346,14 @@ sub get_args_from_argv {
 
     if ($input_args{check_required_args} // 1) {
         while (my ($a, $as) = each %$args_p) {
-            if ($as->{req} &&
-                    !exists($args->{$a})) {
-                return [400, "Missing required argument: $a"] if $strict;
+            if (!exists($args->{$a})) {
+                # give a chance to hook to set missing arg
+                if ($on_missing) {
+                    $on_missing->(arg=>$a, args=>$args, spec=>$as);
+                }
+                if ($as->{req} && !exists($args->{$a})) {
+                    return [400, "Missing required argument: $a"] if $strict;
+                }
             }
             my $parse_json_or_yaml;
             my $type = $as->{schema}[0];

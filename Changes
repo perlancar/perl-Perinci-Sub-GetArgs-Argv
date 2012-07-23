@@ -1,5 +1,15 @@
 Revision history for Perinci-Sub-GetArgs-Agv
 
+0.19     2012-07-23 (SHARYANTO)
+
+         These changes are made to support `cmdline_src` arg spec key (Rinci
+         1.1.21+). Actual implementation will be done by Perinci::CmdLine.
+
+         - Add 'on_missing_required_args' option.
+
+         - Add 'allow_extra_elems' option.
+
+
 0.18     2012-07-19 (SHARYANTO)
 
          - Add 'per_arg_json' option.

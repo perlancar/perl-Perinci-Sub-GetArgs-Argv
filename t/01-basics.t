@@ -211,6 +211,26 @@ test_getargs(meta=>$meta, argv=>[qw/--foo-bar 2/],
              args=>{'foo.bar' => 2},
              name=>"with.dot accepted via --with-dot");
 
+# test option: allow_extra_elems
+
+my $argv = ['a'];
+$meta = {
+    v => 1.1,
+    args => {
+        a => {schema=>'str*'},
+    },
+};
+test_getargs(meta=>$meta, argv=>$argv,
+             error=>1,
+             name=>"allow_extra_elems=>0");
+test_getargs(meta=>$meta, argv=>$argv,
+             allow_extra_elems => 1,
+             args=>{},
+             posttest=>sub{
+                 is_deeply($argv,['a'],'argv');
+             },
+             name=>"allow_extra_elems=>1");
+
 # test option: on_missing_required_args
 
 $meta = {
@@ -248,7 +268,8 @@ sub test_getargs {
         my %input_args = (argv=>$argv, meta=>$args{meta});
         for (qw/strict check_required_args
                 extra_getopts_before extra_getopts_after
-                per_arg_json per_arg_yaml on_missing_required_args/) {
+                per_arg_json per_arg_yaml
+                allow_extra_elems on_missing_required_args/) {
             $input_args{$_} = $args{$_} if defined $args{$_};
         }
         $res = get_args_from_argv(%input_args);

@@ -31,52 +31,11 @@ Currently uses Getopt::Long's GetOptions to do the parsing.
 As with GetOptions, this function modifies its 'argv' argument.
 
 Why would one use this function instead of using Getopt::Long directly? Among
-other reasons, we want YAML parsing (ability to pass data structures via command
-line) and parsing of pos and greedy.
+other reasons, we want to be able to parse complex types.
 
-* How this routine uses the 'args' property
-
-Bool types can be specified using:
-
-    --ARGNAME
-
-or
-
-    --noARGNAME
-
-All the other types can be specified using:
-
-    --ARGNAME VALUE
-
-or
-
-    --ARGNAME=VALUE
-
-VALUE will be parsed as YAML for nonscalar types (hash, array). If you want to
-force YAML parsing for scalar types (e.g. when you want to specify undef, '~' in
-YAML) you can use:
-
-    --ARGNAME-yaml=VALUE
-
-but you need to set 'per_arg_yaml' to true.
-
-This function also (using Perinci::Sub::GetArgs::Array) groks 'pos' and 'greedy'
-argument specification, for example:
-
-    $SPEC{multiply2} = {
-        v => 1.1,
-        summary => 'Multiply 2 numbers (a & b)',
-        args => {
-            a => ['num*' => {pos=>0}],
-            b => ['num*' => {pos=>1}],
-        }
-    }
-
-then on the command-line any of below is valid:
-
-    % multiply2 --a 2 --b 3
-    % multiply2 2 --b 3; # first non-option argument is fed into a (pos=0)
-    % multiply2 2 3;     # first argument is fed into a, second into b (pos=1)
+This function exists mostly to support command-line options parsing for
+Perinci::CmdLine. See its documentation, on the section of command-line
+options/argument parsing.
 
 _
     args => {

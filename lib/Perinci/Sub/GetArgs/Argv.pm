@@ -165,6 +165,8 @@ _
     },
 };
 
+my $re_simple_scalar = qr/^(str|num|int|float|bool)$/;
+
 sub get_args_from_argv {
     # we are trying to shave off startup overhead, so only load modules when
     # about to be used
@@ -195,6 +197,11 @@ sub get_args_from_argv {
 
     while (my ($a, $as) = each %$args_p) {
         $as->{schema} = Data::Sah::normalize_schema($as->{schema} // 'any');
+        # XXX normalization of 'of' clause should've been handled by sah itself
+        if ($as->{schema}[0] eq 'array' && $as->{schema}[1]{of}) {
+            $as->{schema}[1]{of} = Data::Sah::normalize_schema(
+                $as->{schema}[1]{of});
+        }
         my $go_opt;
         $a =~ s/_/-/g; # arg_with_underscore becomes --arg-with-underscore
         my @name = ($a);
@@ -218,6 +225,11 @@ sub get_args_from_argv {
             unless (defined $arg_key) { $arg_key = $name; $arg_key =~ s/-/_/g }
             $name =~ s/\./-/g;
             $go_opt = $name2go_opt->($name, $as->{schema});
+            my $type = $as->{schema}[0];
+            my $cs   = $as->{schema}[1];
+            my $is_simple_scalar = $type =~ $re_simple_scalar;
+            my $is_array_of_simple_scalar = $type eq 'array' &&
+                $cs->{of} && $cs->{of}[0] =~ $re_simple_scalar;
             # why we use coderefs here? due to getopt::long's behavior. when
             # @ARGV=qw() and go_spec is ('foo=s' => \$opts{foo}) then %opts will
             # become (foo=>undef). but if go_spec is ('foo=s' => sub {
@@ -225,16 +237,35 @@ sub get_args_from_argv {
             # prefer, so we can later differentiate "unspecified"
             # (exists($opts{foo}) == false) and "specified as undef"
             # (exists($opts{foo}) == true but defined($opts{foo}) == false).
-            push @go_spec, $go_opt => sub { $args->{$arg_key} = $_[1] };
+            push @go_spec, $go_opt => sub {
+                if ($is_array_of_simple_scalar) {
+                    $args->{$arg_key} //= [];
+                    push @{ $args->{$arg_key} }, $_[1];
+                } elsif ($is_simple_scalar) {
+                    $args->{$arg_key} = $_[1];
+                } else {
+                    require JSON;
+                    require YAML::Syck; local $YAML::Syck::ImplicitTyping = 1;
+                    state $json = JSON->new->allow_nonref;
+                    eval { $args->{$arg_key} = $json->decode($_[1]) };
+                    my $ej = $@;
+                    eval { $args->{$arg_key} = YAML::Syck::Load($_[1]) };
+                    my $ey = $@;
+                    die "Invalid YAML/JSON in arg '$arg_key'" if $ej && $ey;
+                }
+                # XXX special parsing of type = date
+            };
+
             if ($per_arg_json && $as->{schema}[0] ne 'bool') {
                 push @go_spec, "$name-json=s" => sub {
                     require JSON;
                     my $decoded;
                     eval { $decoded = JSON->new->allow_nonref->decode($_[1]) };
-                    my $eval_err = $@;
-                    return [500, "Invalid JSON in option --$name-json: ".
-                                "$_[1]: $eval_err"]
-                        if $eval_err;
+                    my $e = $@;
+                    if ($e) {
+                        die "Invalid JSON in option --$name-json: $_[1]: $e";
+                        return;
+                    }
                     $args->{$arg_key} = $decoded;
                 };
             }
@@ -243,10 +274,11 @@ sub get_args_from_argv {
                     require YAML::Syck; local $YAML::Syck::ImplicitTyping = 1;
                     my $decoded;
                     eval { $decoded = YAML::Syck::Load($_[1]) };
-                    my $eval_err = $@;
-                    return [500, "Invalid YAML in option --$name-yaml: ".
-                                "$_[1]: $eval_err"]
-                        if $eval_err;
+                    my $e = $@;
+                    if ($e) {
+                        die "Invalid YAML in option --$name-yaml: $_[1]: $e";
+                        return;
+                    }
                     $args->{$arg_key} = $decoded;
                 };
             }
@@ -301,7 +333,7 @@ sub get_args_from_argv {
         }
     }
 
-    # 4. check required args & parse json/yaml/etc
+    # 4. check required args
 
     if ($input_args{check_required_args} // 1) {
         while (my ($a, $as) = each %$args_p) {
@@ -314,45 +346,6 @@ sub get_args_from_argv {
                     return [400, "Missing required argument: $a"] if $strict;
                 }
             }
-            my $parse_json_or_yaml;
-            my $type = $as->{schema}[0];
-            # XXX more proper checking, e.g. check any/all recursively for
-            # nonscalar types. check base type.
-            $log->tracef("name=%s, arg=%s, parse_json_or_yaml=%s",
-                         $a, $args->{$a}, $parse_json_or_yaml);
-            $parse_json_or_yaml++ unless $type =~ /^(str|num|int|float|bool)$/;
-            if ($parse_json_or_yaml && defined($args->{$a})) {
-                require JSON;
-                require YAML::Syck; local $YAML::Syck::ImplicitTyping = 1;
-                if (ref($args->{$a}) eq 'ARRAY') {
-                    # XXX check whether each element needs to be YAML/JSON / not
-                    eval {
-                        $args->{$a} = [
-                            map { JSON->new->allow_nonref->decode($_) }
-                                @{$args->{$a}}
-                        ];
-                    };
-                    my $ej = $@;
-                    eval {
-                        $args->{$a} = [
-                            map { YAML::Syck::Load($_) } @{$args->{$a}}
-                        ];
-                    } if $ej;
-                    my $ey = $@;
-                    return [500, "Invalid YAML/JSON in arg '$a'"] if $ej && $ey;
-                } elsif (!ref($args->{$a})) {
-                    eval { $args->{$a} = JSON->new->allow_nonref->decode(
-                        $args->{$a}) };
-                    my $ej = $@;
-                    eval { $args->{$a} = YAML::Syck::Load($args->{$a}) } if $ej;
-                    my $ey = $@;
-                    return [500, "Invalid YAML/JSON in arg '$a'"] if $ej && $ey;
-                } else {
-                    return [500, "BUG: Why is \$args->{$a} ".
-                                ref($args->{$a})."?"];
-                }
-            }
-            # XXX special parsing of type = date
         }
     }
 

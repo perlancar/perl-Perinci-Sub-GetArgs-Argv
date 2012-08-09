@@ -284,6 +284,18 @@ test_getargs(meta=>$meta, argv=>[qw//],
              },
              name=>"arg values set by on_missing_required_args hook");
 
+# since 0.21+, we enable Go::L configuration: bundling
+
+$meta = {
+    v => 1.1,
+    args => {
+        arg => {schema=>'str', cmdline_aliases=>{X=>{}}},
+    },
+};
+test_getargs(meta=>$meta, argv=>[qw/-X=foo/],
+             args=>{arg => '=foo'},
+             name=>"Go::L configuration: bundling");
+
 DONE_TESTING:
 done_testing();
 

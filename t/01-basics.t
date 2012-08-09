@@ -186,7 +186,7 @@ $meta = {
            },
     },
 };
-test_getargs(meta=>$meta, argv=>[qw/-b -s=blah/],
+test_getargs(meta=>$meta, argv=>[qw/-b -s blah/],
              args=>{b=>1, s=>"blah"},
              name=>"one-letter args get -X as well as --X");
 test_getargs(meta=>$meta, argv=>[qw/--nob2/],

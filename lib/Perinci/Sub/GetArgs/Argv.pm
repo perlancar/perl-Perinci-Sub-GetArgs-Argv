@@ -8,6 +8,7 @@ use Log::Any '$log';
 use Data::Clone;
 use Data::Sah;
 use Perinci::Sub::GetArgs::Array qw(get_args_from_array);
+use Perinci::Sub::Util qw(wrapres);
 
 use Exporter;
 our @ISA = qw(Exporter);
@@ -325,7 +326,7 @@ sub get_args_from_argv {
             allow_extra_elems => $allow_extra_elems,
         );
         if ($res->[0] != 200 && $strict) {
-            return [500, "Get args from array failed: $res->[0] - $res->[1]"];
+            return wrapres([500, "Get args from array failed: "], $res);
         } elsif ($res->[0] == 200) {
             my $pos_args = $res->[2];
             for my $name (keys %$pos_args) {

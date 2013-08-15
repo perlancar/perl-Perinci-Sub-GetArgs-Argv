@@ -374,7 +374,8 @@ __END__
 
 This module provides C<get_args_from_argv()>, which parses command line
 arguments (C<@ARGV>) into subroutine arguments (C<%args>). This module is used
-by L<Perinci::CmdLine>.
+by L<Perinci::CmdLine>. For explanation on how command-line options are
+processed, see Perinci::CmdLine's documentation.
 
 This module uses L<Log::Any> for logging framework.
 

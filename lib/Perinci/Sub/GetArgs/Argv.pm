@@ -355,11 +355,57 @@ sub get_args_from_argv {
         } elsif ($res->[0] == 200) {
             my $pos_args = $res->[2];
             for my $name (keys %$pos_args) {
+                my $as  = $args_p->{$name};
+                my $val = $pos_args->{$name};
                 if (exists $args->{$name}) {
                     return [400, "You specified option --$name but also ".
-                                "argument #".$args_p->{$name}{pos}] if $strict;
+                                "argument #".$as->{pos}] if $strict;
                 }
-                $args->{$name} = $pos_args->{$name};
+                my $type = $as->{schema}[0];
+                my $cs   = $as->{schema}[1];
+                my $is_simple_scalar = $type =~ $re_simple_scalar;
+                my $is_array_of_simple_scalar = $type eq 'array' &&
+                    $cs->{of} && $cs->{of}[0] =~ $re_simple_scalar;
+
+                if ($as->{greedy} && ref($val) eq 'ARRAY') {
+                    # try parsing each element as JSON/YAML
+                    my $i = 0;
+                    for (@$val) {
+                        {
+                            my ($success, $e, $decoded);
+                            ($success, $e, $decoded) = _parse_json($_);
+                            if ($success) {
+                                $_ = $decoded;
+                                last;
+                            }
+                            ($success, $e, $decoded) = _parse_yaml($_);
+                            if ($success) {
+                                $_ = $decoded;
+                                last;
+                            }
+                            die "Invalid JSON/YAML in #$as->{pos}\[$i]";
+                        }
+                        $i++;
+                    }
+                }
+                if (!$as->{greedy} && !$is_simple_scalar) {
+                    # try parsing as JSON/YAML
+                    my ($success, $e, $decoded);
+                    ($success, $e, $decoded) = _parse_json($val);
+                    {
+                        if ($success) {
+                            $val = $decoded;
+                            last;
+                        }
+                        ($success, $e, $decoded) = _parse_yaml($val);
+                        if ($success) {
+                            $val = $decoded;
+                            last;
+                        }
+                        die "Invalid JSON/YAML in #$as->{pos}";
+                    }
+                }
+                $args->{$name} = $val;
             }
         }
     }

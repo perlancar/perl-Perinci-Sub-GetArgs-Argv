@@ -44,7 +44,6 @@ _
             schema => ['array*' => {
                 of => 'str*',
             }],
-            req => 1,
             description => 'If not specified, defaults to @ARGV',
         },
         meta => {

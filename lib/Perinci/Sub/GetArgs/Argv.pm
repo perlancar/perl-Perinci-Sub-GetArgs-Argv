@@ -18,6 +18,33 @@ our @EXPORT_OK = qw(get_args_from_argv);
 
 our %SPEC;
 
+my $re_simple_scalar = qr/^(str|num|int|float|bool)$/;
+
+# retun ($success?, $errmsg, $res)
+sub _parse_json {
+    require JSON;
+
+    my $str = shift;
+
+    state $json = JSON->new->allow_nonref;
+    my $res;
+    eval { $res = $json->decode($str) };
+    my $e = $@;
+    return (!$e, $e, $res);
+}
+
+sub _parse_yaml {
+    require YAML::Syck;
+
+    my $str = shift;
+
+    local $YAML::Syck::ImplicitTyping = 1;
+    my $res;
+    eval { $res = YAML::Syck::Load($str) };
+    my $e = $@;
+    return (!$e, $e, $res);
+}
+
 $SPEC{get_args_from_argv} = {
     v => 1.1,
     summary => 'Get subroutine arguments (%args) from command-line arguments '.
@@ -164,9 +191,6 @@ _
         },
     },
 };
-
-my $re_simple_scalar = qr/^(str|num|int|float|bool)$/;
-
 sub get_args_from_argv {
     # we are trying to shave off startup overhead, so only load modules when
     # about to be used
@@ -248,14 +272,20 @@ sub get_args_from_argv {
                 } elsif ($is_simple_scalar) {
                     $args->{$arg_key} = $_[1];
                 } else {
-                    require JSON;
-                    require YAML::Syck; local $YAML::Syck::ImplicitTyping = 1;
-                    state $json = JSON->new->allow_nonref;
-                    eval { $args->{$arg_key} = $json->decode($_[1]) };
-                    my $ej = $@;
-                    eval { $args->{$arg_key} = YAML::Syck::Load($_[1]) };
-                    my $ey = $@;
-                    die "Invalid YAML/JSON in arg '$arg_key'" if $ej && $ey;
+                    {
+                        my ($success, $e, $decoded);
+                        ($success, $e, $decoded) = _parse_json($_[1]);
+                        if ($success) {
+                            $args->{$arg_key} = $decoded;
+                            last;
+                        }
+                        ($success, $e, $decoded) = _parse_yaml($_[1]);
+                        if ($success) {
+                            $args->{$arg_key} = $decoded;
+                            last;
+                        }
+                        die "Invalid YAML/JSON in arg '$arg_key'";
+                    }
                 }
                 # XXX special parsing of type = date
             };
@@ -263,28 +293,24 @@ sub get_args_from_argv {
 
             if ($per_arg_json && $as->{schema}[0] ne 'bool') {
                 push @go_spec, "$name-json=s" => sub {
-                    require JSON;
-                    my $decoded;
-                    eval { $decoded = JSON->new->allow_nonref->decode($_[1]) };
-                    my $e = $@;
-                    if ($e) {
+                    my ($success, $e, $decoded);
+                    ($success, $e, $decoded) = _parse_json($_[1]);
+                    if ($success) {
+                        $args->{$arg_key} = $decoded;
+                    } else {
                         die "Invalid JSON in option --$name-json: $_[1]: $e";
-                        return;
                     }
-                    $args->{$arg_key} = $decoded;
                 };
             }
             if ($per_arg_yaml && $as->{schema}[0] ne 'bool') {
                 push @go_spec, "$name-yaml=s" => sub {
-                    require YAML::Syck; local $YAML::Syck::ImplicitTyping = 1;
-                    my $decoded;
-                    eval { $decoded = YAML::Syck::Load($_[1]) };
-                    my $e = $@;
-                    if ($e) {
+                    my ($success, $e, $decoded);
+                    ($success, $e, $decoded) = _parse_yaml($_[1]);
+                    if ($success) {
+                        $args->{$arg_key} = $decoded;
+                    } else {
                         die "Invalid YAML in option --$name-yaml: $_[1]: $e";
-                        return;
                     }
-                    $args->{$arg_key} = $decoded;
                 };
             }
 

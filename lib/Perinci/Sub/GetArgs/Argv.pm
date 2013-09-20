@@ -317,8 +317,17 @@ sub get_args_from_argv {
             # parse argv_aliases
             if ($as->{cmdline_aliases}) {
                 while (my ($al, $alspec) = each %{$as->{cmdline_aliases}}) {
-                    $go_opt = $name2go_opt->(
-                        $al, $alspec->{schema} // $as->{schema});
+                    my $type =
+                        $alspec->{schema} ? $alspec->{schema}[0] :
+                            $as->{schema} ? $as->{schema}[0] : '';
+                    if ($alspec->{code} && $type eq 'bool') {
+                        # bool --alias doesn't get --noalias if has code
+                        $go_opt = $al; # instead of "$al!"
+                    } else {
+                        $go_opt = $name2go_opt->(
+                            $al, $alspec->{schema} // $as->{schema});
+                    }
+
                     if ($alspec->{code}) {
                         push @go_spec,
                             $go_opt=>sub {$alspec->{code}->($args, $_[1])};

@@ -320,7 +320,8 @@ sub get_args_from_argv {
                     $go_opt = $name2go_opt->(
                         $al, $alspec->{schema} // $as->{schema});
                     if ($alspec->{code}) {
-                        push @go_spec, $go_opt=>sub {$alspec->{code}->($args)};
+                        push @go_spec,
+                            $go_opt=>sub {$alspec->{code}->($args, $_[1])};
                     } else {
                         push @go_spec, $go_opt=>$go_handler;
                     }

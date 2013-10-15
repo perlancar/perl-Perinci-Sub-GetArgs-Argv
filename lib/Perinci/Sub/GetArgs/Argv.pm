@@ -34,7 +34,7 @@ sub _parse_json {
     # modified to handle those, or we use a fork of JSON::XS which doesn't
     # produce those in the first place (probably only when performance is
     # critical).
-    state $cleanser = Data::Clean::FromJSON->new;
+    state $cleanser = Data::Clean::FromJSON->get_cleanser;
 
     my $res;
     eval { $res = $json->decode($str); $cleanser->clean_in_place($res) };

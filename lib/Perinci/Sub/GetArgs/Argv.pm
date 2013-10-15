@@ -22,13 +22,22 @@ my $re_simple_scalar = qr/^(str|num|int|float|bool)$/;
 
 # retun ($success?, $errmsg, $res)
 sub _parse_json {
+    require Data::Clean::FromJSON;
     require JSON;
 
     my $str = shift;
 
     state $json = JSON->new->allow_nonref;
+
+    # to rid of those JSON::XS::Boolean objects which currently choke
+    # Data::Sah-generated validator code. in the future Data::Sah can be
+    # modified to handle those, or we use a fork of JSON::XS which doesn't
+    # produce those in the first place (probably only when performance is
+    # critical).
+    state $cleanser = Data::Clean::FromJSON->new;
+
     my $res;
-    eval { $res = $json->decode($str) };
+    eval { $res = $json->decode($str); $cleanser->clean_in_place($res) };
     my $e = $@;
     return (!$e, $e, $res);
 }

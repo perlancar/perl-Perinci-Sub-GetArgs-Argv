@@ -431,15 +431,17 @@ sub get_args_from_argv {
 
     # 4. check required args
 
-    if ($input_args{check_required_args} // 1) {
-        while (my ($a, $as) = each %$args_p) {
-            if (!exists($args->{$a})) {
-                # give a chance to hook to set missing arg
-                if ($on_missing) {
-                    $on_missing->(arg=>$a, args=>$args, spec=>$as);
-                }
-                if ($as->{req} && !exists($args->{$a})) {
-                    return [400, "Missing required argument: $a"] if $strict;
+    my $has_missing_arg = 0;
+    while (my ($a, $as) = each %$args_p) {
+        if (!exists($args->{$a})) {
+            # give a chance to hook to set missing arg
+            if ($on_missing) {
+                $on_missing->(arg=>$a, args=>$args, spec=>$as);
+            }
+            if ($as->{req} && !exists($args->{$a})) {
+                $has_missing_arg = 1;
+                if (($input_args{check_required_args} // 1) && $strict) {
+                    return [400, "Missing required argument: $a"];
                 }
             }
         }
@@ -447,7 +449,7 @@ sub get_args_from_argv {
 
     $log->tracef("<- get_args_from_argv(), args=%s, remaining argv=%s",
                  $args, $argv);
-    [200, "OK", $args];
+    [200, "OK", $args, {"func.has_missing_arg"=>$has_missing_arg}];
 }
 
 1;

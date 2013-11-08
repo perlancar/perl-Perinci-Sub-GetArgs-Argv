@@ -434,15 +434,15 @@ sub get_args_from_argv {
     my $missing_arg;
     while (my ($a, $as) = each %$args_p) {
         if (!exists($args->{$a})) {
+            next unless $as->{req};
             # give a chance to hook to set missing arg
             if ($on_missing) {
                 $on_missing->(arg=>$a, args=>$args, spec=>$as);
             }
-            if ($as->{req} && !exists($args->{$a})) {
-                $missing_arg = $a;
-                if (($input_args{check_required_args} // 1) && $strict) {
-                    return [400, "Missing required argument: $a"];
-                }
+            next if exists $args->{$a};
+            $missing_arg = $a;
+            if (($input_args{check_required_args} // 1) && $strict) {
+                return [400, "Missing required argument: $a"];
             }
         }
     }

@@ -275,28 +275,39 @@ sub get_args_from_argv {
             # (exists($opts{foo}) == true but defined($opts{foo}) == false).
 
             my $go_handler = sub {
+                my ($val, $val_set);
                 if ($is_array_of_simple_scalar) {
                     $args->{$arg_key} //= [];
-                    push @{ $args->{$arg_key} }, $_[1];
+                    $val_set = 1; $val = $_[1];
+                    push @{ $args->{$arg_key} }, $val;
                 } elsif ($is_simple_scalar) {
-                    $args->{$arg_key} = $_[1];
+                    $val_set = 1; $val = $_[1];
+                    $args->{$arg_key} = $val;
                 } else {
                     {
                         my ($success, $e, $decoded);
                         ($success, $e, $decoded) = _parse_json($_[1]);
                         if ($success) {
-                            $args->{$arg_key} = $decoded;
+                            $val_set = 1; $val = $decoded;
+                            $args->{$arg_key} = $val;
                             last;
                         }
                         ($success, $e, $decoded) = _parse_yaml($_[1]);
                         if ($success) {
-                            $args->{$arg_key} = $decoded;
+                            $val_set = 1; $val = $decoded;
+                            $args->{$arg_key} = $val;
                             last;
                         }
                         die "Invalid YAML/JSON in arg '$arg_key'";
                     }
                 }
                 # XXX special parsing of type = date
+
+                if ($val_set && $as->{cmdline_on_getopt}) {
+                    $as->{cmdline_on_getopt}->(
+                        arg=>$name, value=>$val, args=>$args,
+                    );
+                }
             };
             push @go_spec, $go_opt => $go_handler;
 

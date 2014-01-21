@@ -196,6 +196,10 @@ This hook will be called for each missing argument. It will be supplied hash
 arguments: (arg => $the_missing_argument_name, args =>
 $the_resulting_args_so_far, spec => $the_arg_spec).
 
+The hook can return true if it succeeds in making the missing situation
+resolved. In this case, the function won't complain about missing argument for
+the corresponding argument.
+
 _
         },
     },
@@ -448,7 +452,7 @@ sub get_args_from_argv {
             next unless $as->{req};
             # give a chance to hook to set missing arg
             if ($on_missing) {
-                $on_missing->(arg=>$a, args=>$args, spec=>$as);
+                next if $on_missing->(arg=>$a, args=>$args, spec=>$as);
             }
             next if exists $args->{$a};
             $missing_arg = $a;

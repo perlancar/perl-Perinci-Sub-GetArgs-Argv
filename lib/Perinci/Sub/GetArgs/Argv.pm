@@ -6,6 +6,7 @@ use warnings;
 use Log::Any '$log';
 
 use Data::Sah;
+use Function::Fallback::CoreOrPP qw(clone);
 use Perinci::Sub::GetArgs::Array qw(get_args_from_array);
 use Perinci::Sub::Util qw(err);
 
@@ -205,7 +206,6 @@ _
 };
 sub get_args_from_argv {
     require Getopt::Long;
-    require SHARYANTO::MaybeXS;
 
     my %input_args = @_;
     my $argv       = $input_args{argv} // \@ARGV;
@@ -213,7 +213,7 @@ sub get_args_from_argv {
     my $v = $meta->{v} // 1.0;
     return [412, "Only metadata version 1.1 is supported, given $v"]
         unless $v == 1.1;
-    my $args_p     = SHARYANTO::MaybeXS::clone($meta->{args} // {});
+    my $args_p     = clone($meta->{args} // {});
     my $strict     = $input_args{strict} // 1;
     my $extra_go_b = $input_args{extra_getopts_before} // [];
     my $extra_go_a = $input_args{extra_getopts_after} // [];

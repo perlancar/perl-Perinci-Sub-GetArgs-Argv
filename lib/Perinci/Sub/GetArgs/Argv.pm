@@ -203,6 +203,19 @@ the corresponding argument.
 _
         },
     },
+    result => {
+        description => <<'_',
+
+Error codes:
+
+* 500 - failure in GetOptions, meaning argv is not valid according to metadata
+  specification.
+
+* 502 - coderef in cmdline_aliases got converted into a string, probably because
+  the metadata was transported (e.g. through Riap::HTTP/Riap::Simple).
+
+_
+    },
 };
 sub get_args_from_argv {
     require Getopt::Long;
@@ -353,6 +366,18 @@ sub get_args_from_argv {
                     }
 
                     if ($alspec->{code}) {
+                        if ($alspec->{code} eq 'CODE') {
+                            if (grep {/\A--\Q$al\E(-yaml|-json)?(=|\z)/}
+                                    @$argv) {
+                                return [
+                                    502,
+                                    join("",
+                                         "Code in cmdline_aliases for arg $a ",
+                                         "got converted into string, probably ",
+                                         "because of JSON transport"),
+                                ];
+                            }
+                        }
                         push @go_spec,
                             $go_opt=>sub {$alspec->{code}->($args, $_[1])};
                     } else {

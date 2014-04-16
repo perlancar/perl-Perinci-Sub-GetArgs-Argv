@@ -230,7 +230,8 @@ sub get_args_from_argv {
 
     # 1. first we form Getopt::Long spec
 
-    while (my ($a, $as) = each %$args_p) {
+    for my $a (keys %$args_p) {
+        my $as = $args_p->{$a};
         $as->{schema} = Data::Sah::normalize_schema($as->{schema} // 'any');
         # XXX normalization of 'of' clause should've been handled by sah itself
         if ($as->{schema}[0] eq 'array' && $as->{schema}[1]{of}) {
@@ -338,7 +339,8 @@ sub get_args_from_argv {
 
             # parse argv_aliases
             if ($as->{cmdline_aliases}) {
-                while (my ($al, $alspec) = each %{$as->{cmdline_aliases}}) {
+                for my $al (keys %{$as->{cmdline_aliases}}) {
+                    my $alspec = $as->{cmdline_aliases}{$al};
                     my $type =
                         $alspec->{schema} ? $alspec->{schema}[0] :
                             $as->{schema} ? $as->{schema}[0] : '';
@@ -445,7 +447,8 @@ sub get_args_from_argv {
     # 4. check required args
 
     my $missing_arg;
-    while (my ($a, $as) = each %$args_p) {
+    for my $a (keys %$args_p) {
+        my $as = $args_p->{$a};
         if (!exists($args->{$a})) {
             next unless $as->{req};
             # give a chance to hook to set missing arg
@@ -467,7 +470,6 @@ sub get_args_from_argv {
 
 1;
 #ABSTRACT: Get subroutine arguments from command line arguments (@ARGV)
-__END__
 
 =head1 SYNOPSIS
 

@@ -322,6 +322,7 @@ sub get_args_from_argv {
                 if ($val_set && $as->{cmdline_on_getopt}) {
                     $as->{cmdline_on_getopt}->(
                         arg=>$name, value=>$val, args=>$args,
+                        opt=>$_[0]{ctl}[1], # option name
                     );
                 }
             };
@@ -465,6 +466,20 @@ sub get_args_from_argv {
                     }
                 }
                 $args->{$name} = $val;
+                # we still call cmdline_on_getopt for this
+                if ($as->{cmdline_on_getopt}) {
+                    if ($as->{greedy}) {
+                        $as->{cmdline_on_getopt}->(
+                            arg=>$name, value=>$_, args=>$args,
+                            opt=>undef, # this marks that value is retrieved from cmdline arg
+                        ) for @$val;
+                    } else {
+                        $as->{cmdline_on_getopt}->(
+                            arg=>$name, value=>$val, args=>$args,
+                            opt=>undef, # this marks that value is retrieved from cmdline arg
+                        );
+                    }
+                }
             }
         }
     }

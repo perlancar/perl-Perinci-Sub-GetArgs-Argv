@@ -3,9 +3,9 @@ package Perinci::Sub::GetArgs::Argv;
 use 5.010001;
 use strict;
 use warnings;
-use Log::Any '$log';
+#use Log::Any '$log';
 
-use Data::Sah;
+use Data::Sah::Normalize qw(normalize_schema);
 use Function::Fallback::CoreOrPP qw(clone);
 use Perinci::Sub::GetArgs::Array qw(get_args_from_array);
 use Perinci::Sub::Util qw(err);
@@ -318,7 +318,7 @@ sub get_args_from_argv {
     my $per_arg_json = $input_args{per_arg_json} // 0;
     my $allow_extra_elems = $input_args{allow_extra_elems} // 0;
     my $on_missing = $input_args{on_missing_required_args};
-    $log->tracef("-> get_args_from_argv(), argv=%s", $argv);
+    #$log->tracef("-> get_args_from_argv(), argv=%s", $argv);
 
     # the resulting args
     my $args = {};
@@ -329,10 +329,10 @@ sub get_args_from_argv {
 
     for my $a (keys %$args_p) {
         my $as = $args_p->{$a};
-        $as->{schema} = Data::Sah::normalize_schema($as->{schema} // 'any');
+        $as->{schema} = normalize_schema($as->{schema} // 'any');
         # XXX normalization of 'of' clause should've been handled by sah itself
         if ($as->{schema}[0] eq 'array' && $as->{schema}[1]{of}) {
-            $as->{schema}[1]{of} = Data::Sah::normalize_schema(
+            $as->{schema}[1]{of} = normalize_schema(
                 $as->{schema}[1]{of});
         }
         my $go_opt;
@@ -476,7 +476,7 @@ sub get_args_from_argv {
     # 2. then we run GetOptions to fill $args from command-line opts
 
     @go_spec = (@$extra_go_b, @go_spec, @$extra_go_a);
-    $log->tracef("GetOptions spec: %s", \@go_spec);
+    #$log->tracef("GetOptions spec: %s", \@go_spec);
     my $old_go_opts = Getopt::Long::Configure(
         $strict ? "no_pass_through" : "pass_through",
         "no_ignore_case", "permute", "bundling", "no_getopt_compat");
@@ -587,8 +587,8 @@ sub get_args_from_argv {
         }
     }
 
-    $log->tracef("<- get_args_from_argv(), args=%s, remaining argv=%s",
-                 $args, $argv);
+    #$log->tracef("<- get_args_from_argv(), args=%s, remaining argv=%s",
+    #             $args, $argv);
     [200, "OK", $args, {"func.missing_arg"=>$missing_arg}];
 }
 

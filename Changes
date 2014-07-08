@@ -1,5 +1,12 @@
 Revision history for Perinci-Sub-GetArgs-Agv
 
+0.36     2014-07-08 (SHARYANTO)
+
+         - Adjust to Perinci::Sub::GetArgs::Argv 0.14.
+
+         - Add 'meta_is_normalized' option.
+
+
 0.35     2014-07-04 (SHARYANTO)
 
          - Still call cmdline_on_getopt routine when value for function argument

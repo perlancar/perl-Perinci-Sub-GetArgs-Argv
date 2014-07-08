@@ -121,7 +121,7 @@ _
         },
     },
 };
-sub gen_go_specs_from_meta {
+sub _gen_go_specs_from_meta {
     my %args = @_;
 }
 }

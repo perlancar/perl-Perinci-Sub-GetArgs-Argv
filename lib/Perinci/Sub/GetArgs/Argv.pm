@@ -14,6 +14,7 @@ use Exporter;
 our @ISA = qw(Exporter);
 our @EXPORT_OK = qw(get_args_from_argv);
 
+# DATE
 # VERSION
 
 our %SPEC;
@@ -40,6 +41,89 @@ sub _parse_json {
     eval { $res = $json->decode($str); $cleanser->clean_in_place($res) };
     my $e = $@;
     return (!$e, $e, $res);
+}
+
+$SPEC{gen_go_specs_from_meta} = {
+    v           => 1.1,
+    summary     => 'Generate Getopt::Long spec from function metadata',
+    description => <<'_',
+
+Function arguments will be mapped to command-line options with the same name,
+with non-alphanumeric characters changed to `-` (`-` is preferred over `_`
+because it lets user avoid pressing Shift on popular keyboards). For example:
+`file_size` becomes `file-size`, `file_size.max` becomes `file-size-max`.
+
+Command-line aliases (`cmdline_aliases` property) in the argument specification
+will also be added as command-line option. For more information about
+`cmdline_aliases`, see `Rinci::function`.
+
+If function argument option name clashes with command-line option or another
+existing option, it will be renamed to `NAME-arg` (or `NAME-arg2` and so on).
+For example: `help` will become `help-arg` (if `common_opts` contains `help`,
+that is). If a command-line alias conflicts, a warning will be displayed and the
+alias will not be added as option.
+
+For arguments with type of `bool`, Getopt::Long will by default also add
+`--noNAME` in addition to `--name`.
+
+If `per_arg_json` setting is active, and argument's schema is not a "required
+simple scalar" (e.g. an array, or a nullable string), then `--NAME-json` will
+also be added to let users input undef (through `--NAME-json null`) or a
+non-scalar value (e.g. `--NAME-json '[1,2,3]'`). If this name conflicts with
+another existing option, a warning will be displayed and the option will not be
+added.
+
+If `per_arg_yaml` setting is active, and argument's schema is not a "required
+simple scalar" (e.g. an array, or a nullable string), then `--NAME-yaml` will
+also be added to let users input undef (through `--NAME-yaml '~'`) or a
+non-scalar value (e.g. `--NAME-yaml '[foo, bar]'`). If this name conflicts with
+another existing option, a warning will be displayed and the option will not be
+added. YAML can express a larger set of values, e.g. binary data, circular
+references, etc.
+
+_
+    args => {
+        meta => {
+            summary => 'Rinci function metadata',
+            schema  => 'hash*',
+            req     => 1,
+        },
+        common_opts => {
+            summary => 'A hash of Getopt::Long option specifications'.
+                'and handlers',
+            schema  => 'hash*',
+            description => <<'_',
+
+This argument is used to specify common options.
+
+_
+        },
+        per_arg_json => {
+            summary => 'Whether to add --NAME-json for non-simple arguments',
+            schema  => 'bool',
+            default => 0,
+            description => <<'_',
+
+Will also interpret command-line arguments as JSON if assigned to function
+arguments, if arguments' schema is not simple scalar.
+
+_
+        },
+        per_arg_yaml => {
+            summary => 'Whether to add --NAME-yaml for non-simple arguments',
+            schema  => 'bool',
+            default => 0,
+            description => <<'_',
+
+Will also interpret command-line arguments as YAML if assigned to function
+arguments, if arguments' schema is not simple scalar.
+
+_
+        },
+    },
+};
+sub gen_go_specs_from_meta {
+    my %args = @_;
 }
 
 sub _parse_yaml {

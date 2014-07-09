@@ -46,7 +46,7 @@ $cleanser->clean_in_place($res);
 my $expected_res = [
     200, "OK",
     {
-        '?|h|help' => 'CODE',
+        'h|help|?' => 'CODE',
         'v|version' => 'CODE',
         'verbose!' => 'CODE',
         'format=s' => 'CODE',
@@ -62,7 +62,7 @@ my $expected_res = [
     },
     {
         'func.specmeta' => {
-            '?|h|help' => {arg=>undef,},
+            'h|help|?' => {arg=>undef,},
             'v|version' => {arg=>undef,},
             'verbose!' => {arg=>undef},
             'format=s' => {arg=>undef,},

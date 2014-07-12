@@ -101,11 +101,12 @@ that is).
 
 Each command-line alias (`cmdline_aliases` property) in the argument
 specification will also be added as command-line option, except if it clashes
-with an existing option, in which case the function will warn and skip adding
+with an existing option, in which case this function will warn and skip adding
 the alias. For more information about `cmdline_aliases`, see `Rinci::function`.
 
-For arguments with type of `bool`, Getopt::Long will by default also add
-`--noNAME` in addition to `--name`.
+For arguments with type of `bool`, Getopt::Long will by default also
+automatically recognize `--noNAME` or `--no-NAME` in addition to `--name`. So
+this function will also check those names for clashes.
 
 For arguments with type array of simple scalar, `--NAME` can be specified more
 than once to append to the array.
@@ -488,7 +489,7 @@ _
             description => <<'_',
 
 If set to 1, then if there are array elements unassigned to one of the
-arguments, instead of generating an error, the function will just ignore them.
+arguments, instead of generating an error, this function will just ignore them.
 
 This option will be passed to Perinci::Sub::GetArgs::Array's allow_extra_elems.
 
@@ -509,7 +510,7 @@ arguments: (arg => $the_missing_argument_name, args =>
 $the_resulting_args_so_far, spec => $the_arg_spec).
 
 The hook can return true if it succeeds in making the missing situation
-resolved. In this case, the function will not report the argument as missing.
+resolved. In this case, this function will not report the argument as missing.
 
 _
         },

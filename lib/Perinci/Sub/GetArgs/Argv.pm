@@ -419,6 +419,10 @@ _
             }],
             description => 'If not specified, defaults to @ARGV',
         },
+        args => {
+            summary => 'Specify input args, with some arguments preset',
+            schema  => ['hash'],
+        },
         meta => {
             schema => ['hash*' => {}],
             req => 1,
@@ -550,7 +554,7 @@ sub get_args_from_argv {
     #$log->tracef("-> get_args_from_argv(), argv=%s", $argv);
 
     # to store the resulting args
-    my $rargs = {};
+    my $rargs = $fargs{args} // {};
 
     # 1. first we generate Getopt::Long spec
     my $res = gen_getopt_long_spec_from_meta(

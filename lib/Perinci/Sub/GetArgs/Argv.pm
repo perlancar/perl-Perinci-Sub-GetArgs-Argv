@@ -615,17 +615,22 @@ sub get_args_from_argv {
                     for (@$val) {
                         {
                             my ($success, $e, $decoded);
-                            ($success, $e, $decoded) = _parse_json($_);
-                            if ($success) {
-                                $_ = $decoded;
-                                last;
+                            if ($per_arg_json) {
+                                ($success, $e, $decoded) = _parse_json($_);
+                                if ($success) {
+                                    $_ = $decoded;
+                                    last;
+                                }
                             }
-                            ($success, $e, $decoded) = _parse_yaml($_);
-                            if ($success) {
-                                $_ = $decoded;
-                                last;
+                            if ($per_arg_yaml) {
+                                ($success, $e, $decoded) = _parse_yaml($_);
+                                if ($success) {
+                                    $_ = $decoded;
+                                    last;
+                                }
                             }
-                            die "Invalid JSON/YAML in #$as->{pos}\[$i]";
+                            die "Invalid JSON/YAML in #$as->{pos}\[$i]"
+                                if $per_arg_json || $per_arg_yaml;
                         }
                         $i++;
                     }
@@ -633,19 +638,22 @@ sub get_args_from_argv {
                 if (!$as->{greedy} && !$is_simple_scalar) {
                     # try parsing as JSON/YAML
                     my ($success, $e, $decoded);
-                    ($success, $e, $decoded) = _parse_json($val);
-                    {
+                    if ($per_arg_json) {
+                        ($success, $e, $decoded) = _parse_json($val);
                         if ($success) {
                             $val = $decoded;
                             last;
                         }
+                    }
+                    if ($per_arg_yaml) {
                         ($success, $e, $decoded) = _parse_yaml($val);
                         if ($success) {
                             $val = $decoded;
                             last;
                         }
-                        die "Invalid JSON/YAML in #$as->{pos}";
                     }
+                    die "Invalid JSON/YAML in #$as->{pos}"
+                        if $per_arg_json || $per_arg_yaml;
                 }
                 $rargs->{$name} = $val;
                 # we still call cmdline_on_getopt for this

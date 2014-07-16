@@ -570,11 +570,11 @@ sub get_args_from_argv {
 
     # 2. then we run GetOptions to fill $rargs from command-line opts
     #$log->tracef("GetOptions spec: %s", \@go_spec);
-    my $old_go_opts = Getopt::Long::Configure(
+    my $old_go_conf = Getopt::Long::Configure(
         $strict ? "no_pass_through" : "pass_through",
         "no_ignore_case", "permute", "bundling", "no_getopt_compat");
     my $result = Getopt::Long::GetOptionsFromArray($argv, %$go_spec);
-    Getopt::Long::Configure($old_go_opts);
+    Getopt::Long::Configure($old_go_conf);
     unless ($result) {
         return [500, "GetOptions failed"] if $strict;
     }

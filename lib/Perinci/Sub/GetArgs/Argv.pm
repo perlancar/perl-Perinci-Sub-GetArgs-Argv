@@ -126,32 +126,10 @@ another existing option, a warning will be displayed and the option will not be
 added. YAML can express a larger set of values, e.g. binary data, circular
 references, etc.
 
-Will produce a hash (Getopt::Long spec), with `func.specmeta` and `func.opts`
-that contain extra information (`func.specmeta` is a hash of getopt spec name
-and a hash of extra information while `func.opts` lists all used option names).
-For example this is a complete response:
-
-    [200, "OK",
-     # Getopt::Long spec
-     {"help|h"     => sub { ... }, # this is simply taken from 'common_opts'
-      "version"    => sub { ... }, # ditto
-      "str-arg=s"  => sub { ... }, # from arg 'str_arg'
-      "ary-arg=s"  => sub { ... }, # from arg 'ary_arg'
-      "ary-arg-json=s" => sub { ... },
-      "ary-arg-yaml=s" => sub { ... }},
-     # result metadata
-     {
-       # extra information
-       "func.specmeta" => {
-           "help|h"    => {arg=>undef},
-           "version"   => {arg=>undef},
-           "str-arg=s" => {arg=>'str_arg'},
-           "ary-arg=s" => {arg=>'ary_arg'},
-           "ary-arg-json=s" => {arg=>'ary_arg', is_json=>1},
-           "ary-arg-yaml=s" => {arg=>'ary_arg', is_yaml=>1},
-       },
-       "func.opts" => ['help','h','version','str-arg','ary-arg','ary-arg-json','ary-arg-yaml'],
-     }]
+Will produce a hash (Getopt::Long spec), with `func.specmeta`, `func.opts`,
+`func.common_opts`, `func.func_opts` that contain extra information
+(`func.specmeta` is a hash of getopt spec name and a hash of extra information
+while `func.*opts` lists all used option names).
 
 _
     args => {
@@ -409,9 +387,12 @@ sub gen_getopt_long_spec_from_meta {
     [200, "OK", \%go_spec,
      {
          "func.specmeta"    => \%specmeta,
-         "func.opts"        => [sort keys %seen_opts],
-         "func.common_opts" => [sort keys %seen_common_opts],
-         "func.func_opts"   => [sort keys %seen_func_opts],
+         "func.opts"        => [sort(map {length($_)>1 ? "--$_":"-$_"}
+                                         keys %seen_opts)],
+         "func.common_opts" => [sort(map {length($_)>1 ? "--$_":"-$_"}
+                                         keys %seen_common_opts)],
+         "func.func_opts"   => [sort(map {length($_)>1 ? "--$_":"-$_"}
+                                         keys %seen_func_opts)],
      }];
 }
 

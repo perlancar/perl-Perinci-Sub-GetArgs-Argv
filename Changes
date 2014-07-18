@@ -7,6 +7,8 @@ Revision history for Perinci-Sub-GetArgs-Agv
            key for alias options to trace back original option. Both to aid
            help/usage generation.
 
+         - [Bugfix] Some bug fixes.
+
 
 0.42     2014-07-18 (SHARYANTO)
 

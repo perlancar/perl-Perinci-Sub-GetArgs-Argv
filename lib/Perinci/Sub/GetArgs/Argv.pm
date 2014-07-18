@@ -202,10 +202,10 @@ sub gen_getopt_long_spec_from_meta {
         $specmeta{ $res->{normalized} } = {arg=>undef, orig_spec=>$ospec, parsed=>$res};
         for (@{ $res->{opts} }) {
             return [412, "Clash of common opt '$_'"] if $seen_opts{$_};
-            $seen_opts{$_}++; $seen_common_opts{$_}++;
+            $seen_opts{$_}++; $seen_common_opts{$_} = $ospec;
             if ($res->{is_neg}) {
-                $seen_opts{"no$_"}++; $seen_common_opts{"no$_"}++;
-                $seen_opts{"no-$_"}++; $seen_common_opts{"no-$_"}++;
+                $seen_opts{"no$_"}++; $seen_common_opts{"no$_"} = $ospec;
+                $seen_opts{"no-$_"}++; $seen_common_opts{"no-$_"} = $ospec;
             }
         }
     }
@@ -387,23 +387,33 @@ sub gen_getopt_long_spec_from_meta {
     my $opts        = [sort(map {length($_)>1 ? "--$_":"-$_"} keys %seen_opts)];
     my $common_opts = [sort(map {length($_)>1 ? "--$_":"-$_"} keys %seen_common_opts)];
     my $func_opts   = [sort(map {length($_)>1 ? "--$_":"-$_"} keys %seen_func_opts)];
-    my $arg_opts    = {};
+    my $opts_by_common = {};
+    for my $k (keys %$co) {
+        my @opts;
+        for (keys %seen_common_opts) {
+            next unless $seen_common_opts{$_} eq $k;
+            push @opts, (length($_)>1 ? "--$_":"-$_");
+        }
+        $opts_by_common->{$k} = [sort @opts];
+    }
+    my $opts_by_arg = {};
     for my $arg (keys %$args_p) {
         my @opts;
         for (keys %seen_func_opts) {
             next unless $seen_func_opts{$_} eq $arg;
             push @opts, (length($_)>1 ? "--$_":"-$_");
         }
-        $arg_opts->{$arg} = [sort @opts];
+        $opts_by_arg->{$arg} = [sort @opts];
     }
 
     [200, "OK", \%go_spec,
      {
-         "func.specmeta"    => \%specmeta,
-         "func.opts"        => $opts,
-         "func.common_opts" => $common_opts,
-         "func.func_opts"   => $func_opts,
-         "func.arg_opts"    => $arg_opts,
+         "func.specmeta"       => \%specmeta,
+         "func.opts"           => $opts,
+         "func.common_opts"    => $common_opts,
+         "func.func_opts"      => $func_opts,
+         "func.opts_by_arg"    => $opts_by_arg,
+         "func.opts_by_common" => $opts_by_common,
      }];
 }
 

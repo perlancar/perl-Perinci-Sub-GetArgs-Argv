@@ -148,7 +148,7 @@ my $expected_res = [
             '--str-arg1',
             '-f',
         ],
-        'func.arg_opts' => {
+        'func.opts_by_arg' => {
             'ary.arg1' => [
                 '--ary-arg1',
                 '--ary-arg1-json',
@@ -172,6 +172,28 @@ my $expected_res = [
             ],
             'str_arg1' => [
                 '--str-arg1',
+            ]
+        },
+        'func.opts_by_common' => {
+            'format-options=s' => [
+                '--format-options',
+            ],
+            'format=s' => [
+                '--format',
+            ],
+            'help|h|?' => [
+                '--help',
+                '-?',
+                '-h',
+            ],
+            'verbose!' => [
+                '--no-verbose',
+                '--noverbose',
+                '--verbose',
+            ],
+            'version|v' => [
+                '--version',
+                '-v',
             ]
         },
     },

@@ -215,10 +215,10 @@ sub gen_getopt_long_spec_from_meta {
     my %specmeta; # key = option spec, val = hash of extra info
     my %seen_opts;
 
-    for my $os (keys %$common_opts) {
-        my $res = parse_getopt_long_opt_spec($os)
-            or return [400, "Can't parse common opt spec '$os'"];
-        $go_spec{ $res->{normalized} } = $common_opts->{$os};
+    for my $ospec (keys %$common_opts) {
+        my $res = parse_getopt_long_opt_spec($ospec)
+            or return [400, "Can't parse common opt spec '$ospec'"];
+        $go_spec{ $res->{normalized} } = $common_opts->{$ospec};
         $specmeta{ $res->{normalized} } = {arg=>undef};
         for (@{ $res->{opts} }) {
             return [412, "Clash of common opt '$_'"] if $seen_opts{$_};

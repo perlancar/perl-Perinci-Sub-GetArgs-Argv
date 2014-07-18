@@ -184,7 +184,7 @@ sub gen_getopt_long_spec_from_meta {
         require Perinci::Sub::Normalize;
         $meta = Perinci::Sub::Normalize::normalize_function_metadata($meta);
     }
-    my $common_opts  = $fargs{common_opts} // {};
+    my $co           = $fargs{common_opts} // {};
     my $per_arg_yaml = $fargs{per_arg_yaml} // 0;
     my $per_arg_json = $fargs{per_arg_json} // 0;
     my $rargs        = $fargs{args} // {};
@@ -195,10 +195,10 @@ sub gen_getopt_long_spec_from_meta {
     my %seen_common_opts;
     my %seen_func_opts;
 
-    for my $ospec (keys %$common_opts) {
+    for my $ospec (keys %$co) {
         my $res = parse_getopt_long_opt_spec($ospec)
             or return [400, "Can't parse common opt spec '$ospec'"];
-        $go_spec{ $res->{normalized} } = $common_opts->{$ospec};
+        $go_spec{ $res->{normalized} } = $co->{$ospec};
         $specmeta{ $res->{normalized} } = {arg=>undef, orig_spec=>$ospec, parsed=>$res};
         for (@{ $res->{opts} }) {
             return [412, "Clash of common opt '$_'"] if $seen_opts{$_};
@@ -283,10 +283,10 @@ sub gen_getopt_long_spec_from_meta {
         }; # handler
         $go_spec{$ospec} = $handler;
         $specmeta{$ospec} = {arg=>$arg, parsed=>$parsed};
-        $seen_opts{$opt}++; $seen_func_opts{$opt}++;
+        $seen_opts{$opt}++; $seen_func_opts{$opt} = $arg;
         if ($parsed->{is_neg}) {
-            $seen_opts{"no$opt"}++; $seen_func_opts{"no$opt"}++;
-            $seen_opts{"no-$opt"}++; $seen_func_opts{"no-$opt"}++;
+            $seen_opts{"no$opt"}++; $seen_func_opts{"no$opt"} = $arg;
+            $seen_opts{"no-$opt"}++; $seen_func_opts{"no-$opt"} = $arg;
         }
 
         if ($per_arg_json && $type !~ $re_simple_scalar) {
@@ -306,7 +306,7 @@ sub gen_getopt_long_spec_from_meta {
                 };
                 my $parsed = parse_getopt_long_opt_spec($jospec);
                 $specmeta{$jospec} = {arg=>$arg, is_json=>1,  parsed=>$parsed};
-                $seen_opts{$jopt}++; $seen_func_opts{$jopt}++;
+                $seen_opts{$jopt}++; $seen_func_opts{$jopt} = $arg;
             }
         }
         if ($per_arg_yaml && $type !~ $re_simple_scalar) {
@@ -326,7 +326,7 @@ sub gen_getopt_long_spec_from_meta {
                 };
                 my $parsed = parse_getopt_long_opt_spec($yospec);
                 $specmeta{$yospec} = {arg=>$arg, is_yaml=>1, parsed=>$parsed};
-                $seen_opts{$yopt}++; $seen_func_opts{$yopt}++;
+                $seen_opts{$yopt}++; $seen_func_opts{$yopt} = $arg;
             }
         }
 
@@ -374,25 +374,36 @@ sub gen_getopt_long_spec_from_meta {
                 };
                 push @{$specmeta{$ospec}{($alcode ? '':'non').'code_aliases'}},
                     $alospec;
-                $seen_opts{$alopt}++; $seen_func_opts{$alopt}++;
+                $seen_opts{$alopt}++; $seen_func_opts{$alopt} = $arg;
                 if ($parsed->{is_neg}) {
-                    $seen_opts{"no$alopt"}++; $seen_func_opts{"no$alopt"}++;
-                    $seen_opts{"no-$alopt"}++; $seen_func_opts{"no-$alopt"}++;
+                    $seen_opts{"no$alopt"}++; $seen_func_opts{"no$alopt"} = $arg;
+                    $seen_opts{"no-$alopt"}++; $seen_func_opts{"no-$alopt"} = $arg;
                 }
             }
         }
 
     } # for arg
 
+    my $opts        = [sort(map {length($_)>1 ? "--$_":"-$_"} keys %seen_opts)];
+    my $common_opts = [sort(map {length($_)>1 ? "--$_":"-$_"} keys %seen_common_opts)];
+    my $func_opts   = [sort(map {length($_)>1 ? "--$_":"-$_"} keys %seen_func_opts)];
+    my $arg_opts    = {};
+    for my $arg (keys %$args_p) {
+        my @opts;
+        for (keys %seen_func_opts) {
+            next unless $seen_func_opts{$_} eq $arg;
+            push @opts, (length($_)>1 ? "--$_":"-$_");
+        }
+        $arg_opts->{$arg} = [sort @opts];
+    }
+
     [200, "OK", \%go_spec,
      {
          "func.specmeta"    => \%specmeta,
-         "func.opts"        => [sort(map {length($_)>1 ? "--$_":"-$_"}
-                                         keys %seen_opts)],
-         "func.common_opts" => [sort(map {length($_)>1 ? "--$_":"-$_"}
-                                         keys %seen_common_opts)],
-         "func.func_opts"   => [sort(map {length($_)>1 ? "--$_":"-$_"}
-                                         keys %seen_func_opts)],
+         "func.opts"        => $opts,
+         "func.common_opts" => $common_opts,
+         "func.func_opts"   => $func_opts,
+         "func.arg_opts"    => $arg_opts,
      }];
 }
 

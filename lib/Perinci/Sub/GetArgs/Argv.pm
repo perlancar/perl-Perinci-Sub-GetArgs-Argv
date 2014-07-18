@@ -560,26 +560,28 @@ sub get_args_from_argv {
     my $rargs = $fargs{args} // {};
 
     # 1. first we generate Getopt::Long spec
-    my $res = gen_getopt_long_spec_from_meta(
+    my $genres = gen_getopt_long_spec_from_meta(
         meta => $meta, meta_is_normalized => 1,
         args => $rargs,
         common_opts  => $common_opts,
         per_arg_json => $per_arg_json,
         per_arg_yaml => $per_arg_yaml,
     );
-    return err($res->[0], "Can't generate Getopt::Long spec", $res)
-        if $res->[0] != 200;
-    my $go_spec = $res->[2];
+    return err($genres->[0], "Can't generate Getopt::Long spec", $genres)
+        if $genres->[0] != 200;
+    my $go_spec = $genres->[2];
 
     # 2. then we run GetOptions to fill $rargs from command-line opts
     #$log->tracef("GetOptions spec: %s", \@go_spec);
-    my $old_go_conf = Getopt::Long::Configure(
-        $strict ? "no_pass_through" : "pass_through",
-        "no_ignore_case", "permute", "bundling", "no_getopt_compat");
-    my $result = Getopt::Long::GetOptionsFromArray($argv, %$go_spec);
-    Getopt::Long::Configure($old_go_conf);
-    unless ($result) {
-        return [500, "GetOptions failed"] if $strict;
+    {
+        my $old_go_conf = Getopt::Long::Configure(
+            $strict ? "no_pass_through" : "pass_through",
+            "no_ignore_case", "permute", "bundling", "no_getopt_compat");
+        my $res = Getopt::Long::GetOptionsFromArray($argv, %$go_spec);
+        Getopt::Long::Configure($old_go_conf);
+        unless ($res) {
+            return [500, "GetOptions failed"] if $strict;
+        }
     }
 
     # 3. then we try to fill $rargs from remaining command-line arguments (for
@@ -703,7 +705,7 @@ sub get_args_from_argv {
     #             $rargs, $argv);
     [200, "OK", $rargs, {
         "func.missing_args" => [sort keys %missing_args],
-        # TODO: return gen_getopt_long_spec_from_meta() result if needed
+        "func.gen_getopt_long_spec_result" => $genres,
     }];
 }
 

@@ -304,7 +304,7 @@ sub gen_getopt_long_spec_from_meta {
         $go_spec{$ospec} = $handler;
         $specmeta{$ospec} = {arg=>$arg, parsed=>$parsed};
         $seen_opts{$opt}++;
-        if ($type eq 'bool' && !defined($cs->{is})) {
+        if ($parsed->{is_neg}) {
             $seen_opts{"no$opt"}++;
             $seen_opts{"no-$opt"}++;
         }
@@ -324,7 +324,8 @@ sub gen_getopt_long_spec_from_meta {
                         die "Invalid JSON in option --$jopt: $_[1]: $e";
                     }
                 };
-                $specmeta{$jospec} = {arg=>$arg, is_json=>1};
+                my $parsed = parse_getopt_long_opt_spec($jospec);
+                $specmeta{$jospec} = {arg=>$arg, is_json=>1,  parsed=>$parsed};
                 $seen_opts{$jopt}++;
             }
         }
@@ -343,7 +344,8 @@ sub gen_getopt_long_spec_from_meta {
                         die "Invalid YAML in option --$yopt: $_[1]: $e";
                     }
                 };
-                $specmeta{$yospec} = {arg=>$arg, is_yaml=>1};
+                my $parsed = parse_getopt_long_opt_spec($yospec);
+                $specmeta{$yospec} = {arg=>$arg, is_yaml=>1, parsed=>$parsed};
                 $seen_opts{$yopt}++;
             }
         }
@@ -360,9 +362,9 @@ sub gen_getopt_long_spec_from_meta {
                 my $alsch = $alspec->{schema} // $sch;
                 my $alcode = $alspec->{code};
                 my $alospec;
-                if ($alcode && $type eq 'bool') {
+                if ($alcode && $alsch->[0] eq 'bool') {
                     # bool --alias doesn't get --noalias if has code
-                    $alospec = $al; # instead of "$al!"
+                    $alospec = $alopt; # instead of "$alopt!"
                 } else {
                     $alospec = _opt2ospec($alopt, $alsch);
                 }
@@ -381,16 +383,22 @@ sub gen_getopt_long_spec_from_meta {
                 } else {
                     $go_spec{$alospec} = $handler;
                 }
+                my $parsed = parse_getopt_long_opt_spec($alospec);
                 $specmeta{$alospec} = {
                     alias     => $al,
                     is_alias  => 1,
                     alias_for => $ospec,
                     arg       => $arg,
                     is_code   => $alcode ? 1:0,
+                    parsed    => $parsed,
                 };
                 push @{$specmeta{$ospec}{($alcode ? '':'non').'code_aliases'}},
                     $alospec;
                 $seen_opts{$alopt}++;
+                if ($parsed->{is_neg}) {
+                    $seen_opts{"no$alopt"}++;
+                    $seen_opts{"no-$alopt"}++;
+                }
             }
         }
 

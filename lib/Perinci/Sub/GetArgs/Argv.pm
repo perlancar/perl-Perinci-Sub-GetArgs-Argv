@@ -214,6 +214,8 @@ sub gen_getopt_long_spec_from_meta {
     my %go_spec;
     my %specmeta; # key = option spec, val = hash of extra info
     my %seen_opts;
+    my %seen_common_opts;
+    my %seen_func_opts;
 
     for my $ospec (keys %$common_opts) {
         my $res = parse_getopt_long_opt_spec($ospec)
@@ -222,10 +224,10 @@ sub gen_getopt_long_spec_from_meta {
         $specmeta{ $res->{normalized} } = {arg=>undef, orig_spec=>$ospec, parsed=>$res};
         for (@{ $res->{opts} }) {
             return [412, "Clash of common opt '$_'"] if $seen_opts{$_};
-            $seen_opts{$_}++;
+            $seen_opts{$_}++; $seen_common_opts{$_}++;
             if ($res->{is_neg}) {
-                $seen_opts{"no$_"}++;
-                $seen_opts{"no-$_"}++;
+                $seen_opts{"no$_"}++; $seen_common_opts{"no$_"}++;
+                $seen_opts{"no-$_"}++; $seen_common_opts{"no-$_"}++;
             }
         }
     }
@@ -303,10 +305,10 @@ sub gen_getopt_long_spec_from_meta {
         }; # handler
         $go_spec{$ospec} = $handler;
         $specmeta{$ospec} = {arg=>$arg, parsed=>$parsed};
-        $seen_opts{$opt}++;
+        $seen_opts{$opt}++; $seen_func_opts{$opt}++;
         if ($parsed->{is_neg}) {
-            $seen_opts{"no$opt"}++;
-            $seen_opts{"no-$opt"}++;
+            $seen_opts{"no$opt"}++; $seen_func_opts{"no$opt"}++;
+            $seen_opts{"no-$opt"}++; $seen_func_opts{"no-$opt"}++;
         }
 
         if ($per_arg_json && $type !~ $re_simple_scalar) {
@@ -326,7 +328,7 @@ sub gen_getopt_long_spec_from_meta {
                 };
                 my $parsed = parse_getopt_long_opt_spec($jospec);
                 $specmeta{$jospec} = {arg=>$arg, is_json=>1,  parsed=>$parsed};
-                $seen_opts{$jopt}++;
+                $seen_opts{$jopt}++; $seen_func_opts{$jopt}++;
             }
         }
         if ($per_arg_yaml && $type !~ $re_simple_scalar) {
@@ -346,7 +348,7 @@ sub gen_getopt_long_spec_from_meta {
                 };
                 my $parsed = parse_getopt_long_opt_spec($yospec);
                 $specmeta{$yospec} = {arg=>$arg, is_yaml=>1, parsed=>$parsed};
-                $seen_opts{$yopt}++;
+                $seen_opts{$yopt}++; $seen_func_opts{$yopt}++;
             }
         }
 
@@ -394,10 +396,10 @@ sub gen_getopt_long_spec_from_meta {
                 };
                 push @{$specmeta{$ospec}{($alcode ? '':'non').'code_aliases'}},
                     $alospec;
-                $seen_opts{$alopt}++;
+                $seen_opts{$alopt}++; $seen_func_opts{$alopt}++;
                 if ($parsed->{is_neg}) {
-                    $seen_opts{"no$alopt"}++;
-                    $seen_opts{"no-$alopt"}++;
+                    $seen_opts{"no$alopt"}++; $seen_func_opts{"no$alopt"}++;
+                    $seen_opts{"no-$alopt"}++; $seen_func_opts{"no-$alopt"}++;
                 }
             }
         }
@@ -405,8 +407,12 @@ sub gen_getopt_long_spec_from_meta {
     } # for arg
 
     [200, "OK", \%go_spec,
-     {"func.specmeta" => \%specmeta,
-      "func.opts" => [sort keys %seen_opts]}];
+     {
+         "func.specmeta"    => \%specmeta,
+         "func.opts"        => [sort keys %seen_opts],
+         "func.common_opts" => [sort keys %seen_common_opts],
+         "func.func_opts"   => [sort keys %seen_func_opts],
+     }];
 }
 
 $SPEC{get_args_from_argv} = {

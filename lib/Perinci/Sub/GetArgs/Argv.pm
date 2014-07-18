@@ -254,6 +254,7 @@ sub gen_getopt_long_spec_from_meta {
         }
 
         my $ospec = _opt2ospec($opt, $sch);
+        my $parsed = parse_getopt_long_opt_spec($ospec);
         my $is_simple_scalar = $type =~ $re_simple_scalar;
         my $is_array_of_simple_scalar = $type eq 'array' &&
             $cs->{of} && $cs->{of}[0] =~ $re_simple_scalar;
@@ -301,7 +302,7 @@ sub gen_getopt_long_spec_from_meta {
             }
         }; # handler
         $go_spec{$ospec} = $handler;
-        $specmeta{$ospec} = {arg=>$arg};
+        $specmeta{$ospec} = {arg=>$arg, parsed=>$parsed};
         $seen_opts{$opt}++;
         if ($type eq 'bool' && !defined($cs->{is})) {
             $seen_opts{"no$opt"}++;

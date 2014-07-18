@@ -381,10 +381,11 @@ sub gen_getopt_long_spec_from_meta {
                     $go_spec{$alospec} = $handler;
                 }
                 $specmeta{$alospec} = {
-                    alias    => $al,
-                    is_alias => 1,
-                    arg      => $arg,
-                    is_code  => $alcode ? 1:0,
+                    alias     => $al,
+                    is_alias  => 1,
+                    alias_for => $ospec,
+                    arg       => $arg,
+                    is_code   => $alcode ? 1:0,
                 };
                 push @{$specmeta{$ospec}{($alcode ? '':'non').'code_aliases'}},
                     $alospec;

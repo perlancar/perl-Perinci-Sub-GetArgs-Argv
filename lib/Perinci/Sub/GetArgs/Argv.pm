@@ -635,7 +635,8 @@ sub get_args_from_argv {
                 my $is_array_of_simple_scalar = $type eq 'array' &&
                     $cs->{of} && $cs->{of}[0] =~ $re_simple_scalar;
 
-                if ($as->{greedy} && ref($val) eq 'ARRAY') {
+                if ($as->{greedy} && ref($val) eq 'ARRAY' &&
+                        !$is_array_of_simple_scalar) {
                     my $i = 0;
                     for (@$val) {
                       TRY_PARSING_AS_JSON_YAML:

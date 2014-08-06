@@ -618,7 +618,7 @@ sub get_args_from_argv {
     my $rargs = $fargs{args} // {};
 
     # 1. first we generate Getopt::Long spec
-    my $genres = $args{_genres} // gen_getopt_long_spec_from_meta(
+    my $genres = $fargs{_genres} // gen_getopt_long_spec_from_meta(
         meta => $meta, meta_is_normalized => 1,
         args => $rargs,
         common_opts  => $common_opts,

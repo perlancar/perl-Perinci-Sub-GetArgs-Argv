@@ -191,6 +191,18 @@ arguments, if arguments' schema is not simple scalar.
 
 _
         },
+        ignore_converted_code => {
+            summary => 'Whether to ignore coderefs converted to string',
+            schema => 'bool',
+            default => 0,
+            description => <<'_',
+
+Across network through JSON encoding, coderef in metadata (e.g. in
+`cmdline_aliases` property) usually gets converted to string `CODE`. In some
+cases, like for tab completion, this is harmless so you can turn this option on.
+
+_
+        },
     },
 };
 sub gen_getopt_long_spec_from_meta {
@@ -204,6 +216,7 @@ sub gen_getopt_long_spec_from_meta {
     my $co           = $fargs{common_opts} // {};
     my $per_arg_yaml = $fargs{per_arg_yaml} // 0;
     my $per_arg_json = $fargs{per_arg_json} // 0;
+    my $ignore_converted_code = $fargs{ignore_converted_code};
     my $rargs        = $fargs{args} // {};
 
     my %go_spec;
@@ -371,13 +384,17 @@ sub gen_getopt_long_spec_from_meta {
 
                 if ($alcode) {
                     if ($alcode eq 'CODE') {
-                        return [
-                            502,
-                            join("",
-                                 "Code in cmdline_aliases for arg $arg ",
-                                 "got converted into string, probably ",
-                                 "because of JSON/YAML transport"),
-                        ];
+                        if ($ignore_converted_code) {
+                            $alcode = sub {};
+                        } else {
+                            return [
+                                502,
+                                join("",
+                                     "Code in cmdline_aliases for arg $arg ",
+                                     "got converted into string, probably ",
+                                     "because of JSON/YAML transport"),
+                            ];
+                        }
                     }
                     $go_spec{$alospec} = sub {$alcode->($rargs, $_[1])};
                 } else {
@@ -579,6 +596,18 @@ resolved. In this case, this function will not report the argument as missing.
 
 _
         },
+        ignore_converted_code => {
+            summary => 'Whether to ignore coderefs converted to string',
+            schema => 'bool',
+            default => 0,
+            description => <<'_',
+
+Across network through JSON encoding, coderef in metadata (e.g. in
+`cmdline_aliases` property) usually gets converted to string `CODE`. In some
+cases, like for tab completion, this is harmless so you can turn this option on.
+
+_
+        },
     },
     result => {
         description => <<'_',
@@ -612,6 +641,7 @@ sub get_args_from_argv {
     my $per_arg_json      = $fargs{per_arg_json} // 0;
     my $allow_extra_elems = $fargs{allow_extra_elems} // 0;
     my $on_missing        = $fargs{on_missing_required_args};
+    my $ignore_converted_code = $fargs{ignore_converted_code};
     #$log->tracef("-> get_args_from_argv(), argv=%s", $argv);
 
     # to store the resulting args
@@ -624,6 +654,7 @@ sub get_args_from_argv {
         common_opts  => $common_opts,
         per_arg_json => $per_arg_json,
         per_arg_yaml => $per_arg_yaml,
+        ignore_converted_code => $ignore_converted_code,
     );
     return err($genres->[0], "Can't generate Getopt::Long spec", $genres)
         if $genres->[0] != 200;

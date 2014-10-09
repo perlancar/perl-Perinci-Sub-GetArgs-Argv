@@ -199,7 +199,10 @@ _
 
 Across network through JSON encoding, coderef in metadata (e.g. in
 `cmdline_aliases` property) usually gets converted to string `CODE`. In some
-cases, like for tab completion, this is harmless so you can turn this option on.
+cases, like for tab completion, this is pretty harmless so you can turn this
+option on. For example, in the case of `cmdline_aliases`, the effect is just
+that command-line aliases code are not getting executed, but this is usually
+okay.
 
 _
         },

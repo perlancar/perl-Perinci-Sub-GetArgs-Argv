@@ -1,5 +1,8 @@
 package Perinci::Sub::GetArgs::Argv;
 
+# DATE
+# VERSION
+
 use 5.010001;
 use strict;
 use warnings;
@@ -16,9 +19,6 @@ our @EXPORT_OK = qw(
                        gen_getopt_long_spec_from_meta
                        get_args_from_argv
                );
-
-# DATE
-# VERSION
 
 our %SPEC;
 

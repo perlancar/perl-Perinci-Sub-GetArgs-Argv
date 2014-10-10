@@ -303,6 +303,10 @@ $SPEC{gen_getopt_long_spec_from_meta} = {
     summary     => 'Generate Getopt::Long spec from Rinci function metadata',
     description => <<'_',
 
+This routine will produce a `Getopt::Long` specification from Rinci function
+metadata, as well as some more data structure in the result metadata to help
+producing a command-line help/usage message.
+
 Function arguments will be mapped to command-line options with the same name,
 with non-alphanumeric characters changed to `-` (`-` is preferred over `_`
 because it lets user avoid pressing Shift on popular keyboards). For example:

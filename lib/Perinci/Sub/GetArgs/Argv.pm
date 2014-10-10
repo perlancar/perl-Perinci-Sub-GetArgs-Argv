@@ -134,6 +134,8 @@ sub _args2opts {
         my $is_array_of_simple_scalar = $type eq 'array' &&
             $cs->{of} && $cs->{of}[0] =~ $re_simple_scalar;
 
+        my $stash = {};
+
         # why we use coderefs here? due to Getopt::Long's behavior. when
         # @ARGV=qw() and go_spec is ('foo=s' => \$opts{foo}) then %opts will
         # become (foo=>undef). but if go_spec is ('foo=s' => sub { $opts{foo} =
@@ -144,6 +146,22 @@ sub _args2opts {
 
         my $handler = sub {
             my ($val, $val_set);
+
+            # how many times have been called for this argument?
+            my $num_called = ++$stash->{called}{$arg};
+
+            # hashify rargs till the end of the handler scope if it happens to
+            # be an array (this is the case when we want to fill values using
+            # element_meta).
+            my $rargs = do {
+                if (ref($rargs) eq 'ARRAY') {
+                    $rargs->[$num_called-1] //= {};
+                    $rargs->[$num_called-1];
+                } else {
+                    $rargs;
+                }
+            };
+
             if ($is_array_of_simple_scalar) {
                 $rargs->{$arg} //= [];
                 $val_set = 1; $val = $_[1];
@@ -291,6 +309,18 @@ sub _args2opts {
                 %args,
                 argprefix => "$argprefix$arg\::",
                 meta      => $as->{meta},
+                rargs     => $rargs->{$arg},
+            );
+            return $res if $res;
+        }
+
+        # element submetadata
+        if ($as->{element_meta}) {
+            $rargs->{$arg} = [];
+            my $res = _args2opts(
+                %args,
+                argprefix => "$argprefix$arg\::",
+                meta      => $as->{element_meta},
                 rargs     => $rargs->{$arg},
             );
             return $res if $res;

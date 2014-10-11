@@ -278,8 +278,22 @@ sub _args2opts {
                             ];
                         }
                     }
-                    $go_spec->{$alospec} =
-                        sub {$alcode->($rargs, $_[1])};
+                    # alias handler
+                    $go_spec->{$alospec} = sub {
+
+                        # do the same like in arg handler
+                        my $num_called = ++$stash->{called}{$arg};
+                        my $rargs = do {
+                            if (ref($rargs) eq 'ARRAY') {
+                                $rargs->[$num_called-1] //= {};
+                                $rargs->[$num_called-1];
+                            } else {
+                                $rargs;
+                            }
+                        };
+
+                        $alcode->($rargs, $_[1]);
+                    };
                 } else {
                     $go_spec->{$alospec} = $handler;
                 }

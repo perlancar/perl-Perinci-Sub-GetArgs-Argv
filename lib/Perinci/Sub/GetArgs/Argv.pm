@@ -252,7 +252,8 @@ sub _args2opts {
                     next;
                 }
                 my $alspec = $as->{cmdline_aliases}{$al};
-                my $alsch = $alspec->{schema} // $sch;
+                my $alsch = $alspec->{schema} //
+                    $alspec->{is_flag} ? [bool=>{req=>1,is=>1}] : $sch;
                 my $alcode = $alspec->{code};
                 my $alospec;
                 my $parsed;

@@ -1,5 +1,12 @@
 Revision history for Perinci-Sub-GetArgs-Agv
 
+0.56    2014-10-23 (PERLANCAR)
+
+	- No functional changes.
+
+	- Typo: unimplemented status is 501, not 502.
+
+
 0.55    2014-10-11 (PERLANCAR)
 
 	- Support is_flag cmdline_alias property.

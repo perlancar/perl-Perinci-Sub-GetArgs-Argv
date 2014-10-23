@@ -271,7 +271,7 @@ sub _args2opts {
                             $alcode = sub {};
                         } else {
                             return [
-                                502,
+                                501,
                                 join("",
                                      "Code in cmdline_aliases for arg $fqarg ",
                                      "got converted into string, probably ",
@@ -719,7 +719,7 @@ Error codes:
 * 500 - failure in GetOptions, meaning argv is not valid according to metadata
   specification (only if 'strict' mode is enabled).
 
-* 502 - coderef in cmdline_aliases got converted into a string, probably because
+* 501 - coderef in cmdline_aliases got converted into a string, probably because
   the metadata was transported (e.g. through Riap::HTTP/Riap::Simple).
 
 _

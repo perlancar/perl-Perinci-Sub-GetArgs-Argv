@@ -22,7 +22,7 @@ our @EXPORT_OK = qw(
 
 our %SPEC;
 
-my $re_simple_scalar = qr/^(str|num|int|float|bool)$/;
+my $re_simple_scalar = qr/^(str|num|int|float|bool|buf)$/;
 
 # retun ($success?, $errmsg, $res)
 sub _parse_json {
@@ -101,6 +101,11 @@ sub _opt2ospec {
             }
             return @res;
         }
+    } elsif ($type eq 'buf') {
+        return (
+            "$opt=s", {opts=>[$opt], desttype=>"", type=>"s"}, undef,
+            "$opt-base64=s", {opts=>["$opt-base64"], desttype=>"", type=>"s"}, {is_base64=>1},
+        );
     } else {
         my $t = ($type eq 'int' ? 'i' : $type eq 'float' ? 'f' :
                      $is_array_of_simple_scalar ? 's@' : 's');
@@ -219,6 +224,12 @@ sub _args2opts {
                 $go_spec->{$ospec} = sub { $handler->($_[0], 0) };
             } elsif (defined $extra->{is_neg}) {
                 $go_spec->{$ospec} = sub { $handler->($_[0], 1) };
+            } elsif ($extra->{is_base64}) {
+                $go_spec->{$ospec} = sub {
+                    require MIME::Base64;
+                    my $decoded = MIME::Base64::decode($_[1]);
+                    $handler->($_[0], $decoded);
+                };
             } else {
                 $go_spec->{$ospec} = $handler;
             }
@@ -272,14 +283,15 @@ sub _args2opts {
             # parse argv_aliases
             if ($as->{cmdline_aliases} && !$aliases_processed++) {
                 for my $al (keys %{$as->{cmdline_aliases}}) {
+                    my $alspec = $as->{cmdline_aliases}{$al};
+                    my $alsch = $alspec->{schema} //
+                        $alspec->{is_flag} ? [bool=>{req=>1,is=>1}] : $sch;
+                    my $altype = $alsch->[0];
                     my $alopt = _arg2opt("$argprefix$al");
                     if ($seen_opts->{$alopt}) {
                         warn "Clash of cmdline_alias option $al";
                         next;
                     }
-                    my $alspec = $as->{cmdline_aliases}{$al};
-                    my $alsch = $alspec->{schema} //
-                        $alspec->{is_flag} ? [bool=>{req=>1,is=>1}] : $sch;
                     my $alcode = $alspec->{code};
                     my $alospec;
                     my $parsed;

@@ -22,14 +22,15 @@ my $meta = {
         help       => {schema=>['bool', is=>1]},
         hash1      => {schema=>'hash', meta=>{v=>1.1, args=>{a=>{schema=>'str'}}}},
         ary1       => {schema=>'array', element_meta=>{v=>1.1, args=>{a=>{schema=>'str'}}}},
-        with_foo   => {schema=>'bool'}, # demo negation form
+        with_foo   => {schema=>'bool'}, # demo negation form with-foo -> without-foo
+        buf1       => {schema=>'buf'},
     },
 };
 
 # TODO: test per_arg_json=0
 # TODO: test per_arg_yaml=0
 # TODO: test conflicts
-
+# TODO: --nonsimple has --nonsimple-json and --nonsimple-yaml
 my $res = gen_getopt_long_spec_from_meta(
     meta=>$meta,
     per_arg_json=>1,
@@ -95,6 +96,8 @@ my $expected_res = [
         'ary1-a=s' => 'CODE',
         'with-foo' => 'CODE',
         'without-foo' => 'CODE',
+        'buf1=s' => 'CODE',
+        'buf1-base64=s' => 'CODE',
     },
     {
         'func.specmeta' => {
@@ -125,6 +128,8 @@ my $expected_res = [
             'ary1-a=s' => {arg=>'a', fqarg=>'ary1::a', parsed=>'PARSED',},
             'with-foo' => {arg=>'with_foo', fqarg=>'with_foo', parsed=>'PARSED', is_neg=>0},
             'without-foo' => {arg=>'with_foo', fqarg=>'with_foo', parsed=>'PARSED', is_neg=>1},
+            'buf1=s' => {arg=>'buf1', fqarg=>'buf1', parsed=>'PARSED'},
+            'buf1-base64=s' => {arg=>'buf1', fqarg=>'buf1', parsed=>'PARSED', is_base64=>1},
         },
         'func.opts' => [
             '--ary-arg1',
@@ -135,6 +140,8 @@ my $expected_res = [
             '--ary1-json',
             '--ary1-yaml',
             '--bool1',
+            '--buf1',
+            '--buf1-base64',
             '--float1',
             '--format',
             '--format-options',
@@ -181,6 +188,8 @@ my $expected_res = [
             '--ary1-json',
             '--ary1-yaml',
             '--bool1',
+            '--buf1',
+            '--buf1-base64',
             '--float1',
             '--hash1',
             '--hash1-a',
@@ -240,6 +249,10 @@ my $expected_res = [
             'with_foo' => [
                 '--with-foo',
                 '--without-foo',
+            ],
+            'buf1' => [
+                '--buf1',
+                '--buf1-base64',
             ],
         },
         'func.opts_by_common' => {

@@ -69,11 +69,13 @@ sub _arg2opt {
 
 sub _negations_for_opt {
     my $word = shift;
-    if ($word =~ /\Awith-(.+)/) {
-        return ("without-$1");
-    } elsif ($word =~ /\Awithout-(.+)/) {
-        return ("with-$1");
-    } else {
+    if      ($word =~ /\Awith-(.+)/   ) { return ("without-$1") }
+    elsif ($word =~ /\Awithout-(.+)/) { return ("with-$1")    }
+    elsif ($word =~ /\Ais-(.+)/     ) { return ("isnt-$1")    }
+    elsif ($word =~ /\Aisnt-(.+)/   ) { return ("is-$1")      }
+    elsif ($word =~ /\Aare-(.+)/    ) { return ("arent-$1")   }
+    elsif ($word =~ /\Aarent-(.+)/  ) { return ("are-$1")     }
+    else {
         return ("no$word", "no-$word");
     }
 }

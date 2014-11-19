@@ -538,7 +538,7 @@ sub gen_getopt_long_spec_from_meta {
         my $res = parse_getopt_long_opt_spec($ospec)
             or return [400, "Can't parse common opt spec '$ospec'"];
         $go_spec{$ospec} = $handler;
-        $specmeta{$ospec} = {arg=>undef, parsed=>$res};
+        $specmeta{$ospec} = {common_opt=>$k, arg=>undef, parsed=>$res};
         for (@{ $res->{opts} }) {
             return [412, "Clash of common opt '$_'"] if $seen_opts{$_};
             $seen_opts{$_}++; $seen_common_opts{$_} = $ospec;

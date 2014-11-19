@@ -101,11 +101,11 @@ my $expected_res = [
     },
     {
         'func.specmeta' => {
-            'help|h|?' => {arg=>undef, parsed=>'PARSED',},
-            'version|v' => {arg=>undef, parsed=>'PARSED',},
-            'verbose!' => {arg=>undef, parsed=>'PARSED',},
-            'format=s' => {arg=>undef, parsed=>'PARSED',},
-            'format-options=s' => {arg=>undef, parsed=>'PARSED',},
+            'help|h|?' => {arg=>undef, common_opt=>'help', parsed=>'PARSED',},
+            'version|v' => {arg=>undef, common_opt=>'version', parsed=>'PARSED',},
+            'verbose!' => {arg=>undef, common_opt=>'verbose', parsed=>'PARSED',},
+            'format=s' => {arg=>undef, common_opt=>'format', parsed=>'PARSED',},
+            'format-options=s' => {arg=>undef, common_opt=>'fmtopts', parsed=>'PARSED',},
             'str-arg1=s' => {arg=>'str_arg1', fqarg=>'str_arg1', parsed=>'PARSED',},
             'ary-arg1=s@' => {arg=>'ary.arg1', fqarg=>'ary.arg1', parsed=>'PARSED',},
             'ary-arg1-json=s' => {arg=>'ary.arg1', fqarg=>'ary.arg1', is_json=>1, parsed=>'PARSED',},

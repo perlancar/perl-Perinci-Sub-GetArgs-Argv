@@ -441,6 +441,9 @@ _
             schema  => 'hash*',
             req     => 1,
         },
+        meta_is_normalized => {
+            schema => 'bool*',
+        },
         args => {
             summary => 'Reference to hash which will store the result',
             schema  => 'hash*',

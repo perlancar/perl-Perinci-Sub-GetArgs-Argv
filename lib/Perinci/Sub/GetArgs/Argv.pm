@@ -76,7 +76,7 @@ sub _negations_for_opt {
     elsif ($word =~ /\Aare-(.+)/    ) { return ("arent-$1")   }
     elsif ($word =~ /\Aarent-(.+)/  ) { return ("are-$1")     }
     else {
-        return ("no$word", "no-$word");
+        return ("no-$word", "no$word");
     }
 }
 
@@ -97,9 +97,10 @@ sub _opt2ospec {
             return ($opt, {opts=>[$opt]});
         } else {
             my @res;
-            push @res, $opt, {opts=>[$opt]}, {is_neg=>0};
-            for (_negations_for_opt($opt)) {
-                push @res, $_, {opts=>[$_]}, {is_neg=>1};
+            my @negs = _negations_for_opt($opt);
+            push @res, $opt, {opts=>[$opt]}, {is_neg=>0, neg_opts=>\@negs};
+            for (@negs) {
+                push @res, $_, {opts=>[$_]}, {is_neg=>1, pos_opts=>[$opt]};
             }
             return @res;
         }

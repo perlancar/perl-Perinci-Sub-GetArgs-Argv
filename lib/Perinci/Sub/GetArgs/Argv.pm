@@ -958,10 +958,6 @@ arguments (C<@ARGV>) into subroutine arguments (C<%args>). This module is used
 by L<Perinci::CmdLine>. For explanation on how command-line options are
 processed, see Perinci::CmdLine's documentation.
 
-This module uses L<Log::Any> for logging framework.
-
-This module has L<Rinci> metadata.
-
 
 =head1 FAQ
 

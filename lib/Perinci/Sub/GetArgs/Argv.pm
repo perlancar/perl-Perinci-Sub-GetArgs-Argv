@@ -22,6 +22,11 @@ our @EXPORT_OK = qw(
 
 our %SPEC;
 
+$SPEC{':package'} = {
+    v => 1.1,
+    summary => 'Get subroutine arguments from command line arguments (@ARGV)',
+};
+
 my $re_simple_scalar = qr/^(str|num|int|float|bool|buf)$/;
 
 # retun ($success?, $errmsg, $res)
@@ -942,7 +947,7 @@ sub get_args_from_argv {
 }
 
 1;
-#ABSTRACT: Get subroutine arguments from command line arguments (@ARGV)
+#ABSTRACT:
 
 =head1 SYNOPSIS
 

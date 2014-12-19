@@ -655,6 +655,8 @@ Normally you would want to use strict mode, for more error checking. Setting off
 strict is used by, for example, Perinci::Sub::Complete during completion where
 the command-line might still be incomplete.
 
+Should probably be named `ignore_errors`. :-)
+
 _
         },
         per_arg_yaml => {

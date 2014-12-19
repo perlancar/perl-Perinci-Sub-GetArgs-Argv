@@ -652,7 +652,8 @@ If set to 0, will still return parsed argv even if there are parsing errors
 (reported by Getopt::Long). If set to 1 (the default), will die upon error.
 
 Normally you would want to use strict mode, for more error checking. Setting off
-strict is used by, for example, Perinci::Sub::Complete.
+strict is used by, for example, Perinci::Sub::Complete during completion where
+the command-line might still be incomplete.
 
 _
         },
@@ -810,6 +811,7 @@ sub get_args_from_argv {
     # 2. then we run GetOptions to fill $rargs from command-line opts
     #$log->tracef("GetOptions spec: %s", \@go_spec);
     {
+        local $SIG{__WARN__} = sub{} if !$strict;
         my $old_go_conf = Getopt::Long::Configure(
             $strict ? "no_pass_through" : "pass_through",
             "no_ignore_case", "permute", "bundling", "no_getopt_compat");

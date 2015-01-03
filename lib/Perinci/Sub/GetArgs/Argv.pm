@@ -971,11 +971,6 @@ processed, see Perinci::CmdLine's documentation.
 =head1 FAQ
 
 
-=head1 TODO
-
-Option to enable json/yaml for nullable simple scalar (to enable C<--str-json
-'~'>).
-
 =head1 SEE ALSO
 
 L<Perinci>

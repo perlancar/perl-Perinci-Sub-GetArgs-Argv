@@ -943,6 +943,61 @@ sub get_args_from_argv {
         }
     }
 
+    # 5. check 'deps', currently we only support 'arg' dep type
+    for my $arg (keys %$args_prop) {
+        my $arg_spec = $args_prop->{$arg};
+        next unless exists $rargs->{$arg};
+        next unless $arg_spec->{deps};
+        my $dep_arg = $arg_spec->{deps}{arg};
+        next unless $dep_arg;
+        return [400, "You specify '$arg', but don't specify '$dep_arg' ".
+                    "(upon which '$arg' depends)"]
+            unless exists $rargs->{$dep_arg};
+    }
+
+    # 5. check 'args_groups'
+    {
+        use experimental 'smartmatch';
+        last unless $meta->{args_groups};
+        my @specified_args = sort keys %$rargs;
+        for my $group_spec (@{ $meta->{args_groups} }) {
+            my $group_args = $group_spec->{args};
+            next unless @$group_args > 1;
+            my $rel = $group_spec->{rel};
+            my @args_in_group = grep {$_ ~~ @$group_args} @specified_args;
+            if ($rel eq 'one_of') {
+                next unless @args_in_group;
+                if (@args_in_group > 1) {
+                    my $first_arg = shift @args_in_group;
+                    return [
+                        400, join(
+                            "",
+                            "You specify '$first_arg', but also specify ",
+                            join(", ", map {"'$_'"} @args_in_group),
+                            " (only one can be specified)",
+                        )];
+                }
+            } elsif ($rel eq 'all') {
+                next unless @args_in_group;
+                if (@args_in_group < @$group_args) {
+                    my @missing = grep {!($_ ~~ @specified_args)} @$group_args;
+                    return [
+                        400, join(
+                            "",
+                            "You specify ",
+                            join(", ", map {"'$_'"} @args_in_group),
+                            ", but don't specify ",
+                            join(", ", map {"'$_'"} @missing),
+                            " (they must all be specified together)",
+                        )];
+                }
+            } else {
+                die "BUG: Unknown rel '$rel' in args_groups" .
+                    ", only one_of/all is supported";
+            }
+        }
+    }
+
     #$log->tracef("<- get_args_from_argv(), args=%s, remaining argv=%s",
     #             $rargs, $argv);
     [200, "OK", $rargs, {

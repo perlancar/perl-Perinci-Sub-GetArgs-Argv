@@ -617,6 +617,104 @@ subtest 'base64' => sub {
     );
 };
 
+subtest 'arg spec prop: deps' => sub {
+    my $meta = {
+        v => 1.1,
+        args => {
+            a1 => {schema=>'str*'},
+            a2 => {schema=>'str*', deps=>{arg=>'a1'}},
+        },
+    };
+
+    test_getargs(
+        name  => "a2 with a1 present -> ok",
+        meta  => $meta,
+        argv  => ['--a2', 2, '--a1', 1],
+    );
+    test_getargs(
+        name  => "a1 without a2 present -> ok",
+        meta  => $meta,
+        argv  => ['--a1', 1],
+    );
+    test_getargs(
+        name  => "a2 without a1 present -> error",
+        meta  => $meta,
+        argv  => ['--a2', 2],
+        error => 1,
+    );
+
+    # XXX test unknown dep type
+    # XXX test unknown arg
+    # XXX test circular deps
+};
+
+subtest 'prop: args_groups' => sub {
+    my $meta = {
+        v => 1.1,
+        args => {
+            a1 => {schema=>'str*'},
+            a2 => {schema=>'str*'},
+            a3 => {schema=>'str*'},
+            a4 => {schema=>'str*'},
+            a5 => {schema=>'str*'},
+            a6 => {schema=>'str*'},
+        },
+        args_groups => [
+            {args=>[qw/a1 a2 a3/], rel=>'one_of'},
+            {args=>[qw/a4 a5 a6/], rel=>'all'},
+        ],
+    };
+
+    # one_of
+    test_getargs(
+        name  => "one_of: none of a1, a2, a3 present -> ok",
+        meta  => $meta,
+        argv  => [],
+    );
+    test_getargs(
+        name  => "one_of: one of a1*, a2, a3 present -> ok",
+        meta  => $meta,
+        argv  => ['--a1', 1],
+    );
+    test_getargs(
+        name  => "one_of: one of a1, a2*, a3 present -> ok",
+        meta  => $meta,
+        argv  => ['--a2', 2],
+    );
+    test_getargs(
+        name  => "one_of: one of a1, a2, a3* present -> ok",
+        meta  => $meta,
+        argv  => ['--a3', 3],
+    );
+    test_getargs(
+        name  => "one_of: more than one of a1, a2, a3 present -> error",
+        meta  => $meta,
+        argv  => ['--a1', 1, '--a2', 2],
+        error => 1,
+    );
+
+    # all
+    test_getargs(
+        name  => "all: none of a4, a5, a6 present -> ok",
+        meta  => $meta,
+        argv  => [],
+    );
+    test_getargs(
+        name  => "all: all of a4, a5, a6 present -> ok",
+        meta  => $meta,
+        argv  => ['--a4', 1, '--a5', 1, '--a6', 1],
+    );
+    test_getargs(
+        name  => "all: only some of a4, a5, a6 present -> error",
+        meta  => $meta,
+        argv  => ['--a4', 1],
+        error => 1,
+    );
+
+    # XXX test unknown rel
+    # XXX test unknown arg in the groups
+};
+
 DONE_TESTING:
 done_testing;
 

@@ -944,19 +944,25 @@ sub get_args_from_argv {
     }
 
     # 5. check 'deps', currently we only support 'arg' dep type
-    for my $arg (keys %$args_prop) {
-        my $arg_spec = $args_prop->{$arg};
-        next unless exists $rargs->{$arg};
-        next unless $arg_spec->{deps};
-        my $dep_arg = $arg_spec->{deps}{arg};
-        next unless $dep_arg;
-        return [400, "You specify '$arg', but don't specify '$dep_arg' ".
-                    "(upon which '$arg' depends)"]
-            unless exists $rargs->{$dep_arg};
+    {
+        last unless $strict;
+
+        for my $arg (keys %$args_prop) {
+            my $arg_spec = $args_prop->{$arg};
+            next unless exists $rargs->{$arg};
+            next unless $arg_spec->{deps};
+            my $dep_arg = $arg_spec->{deps}{arg};
+            next unless $dep_arg;
+            return [400, "You specify '$arg', but don't specify '$dep_arg' ".
+                        "(upon which '$arg' depends)"]
+                unless exists $rargs->{$dep_arg};
+        }
     }
 
     # 5. check 'args_groups'
     {
+        last unless $strict;
+
         use experimental 'smartmatch';
         last unless $meta->{args_groups};
         my @specified_args = sort keys %$rargs;

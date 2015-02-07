@@ -693,6 +693,13 @@ subtest 'prop: args_groups' => sub {
         error => 1,
     );
 
+    test_getargs(
+        name  => "one_of: more than one of a1, a2, a3 present -> ok if !strict",
+        meta  => $meta,
+        argv  => ['--a1', 1, '--a2', 2],
+        strict => 0,
+    );
+
     # all
     test_getargs(
         name  => "all: none of a4, a5, a6 present -> ok",
@@ -709,6 +716,13 @@ subtest 'prop: args_groups' => sub {
         meta  => $meta,
         argv  => ['--a4', 1],
         error => 1,
+    );
+
+    test_getargs(
+        name  => "all: only some of a4, a5, a6 present -> ok if !strict",
+        meta  => $meta,
+        argv  => ['--a4', 1],
+        strict => 0,
     );
 
     # XXX test unknown rel

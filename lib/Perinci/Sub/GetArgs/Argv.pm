@@ -55,6 +55,7 @@ sub _parse_json {
 }
 
 sub _parse_yaml {
+    no warnings 'once';
     require YAML::Syck;
 
     my $str = shift;
@@ -134,14 +135,14 @@ sub _args2opts {
     my $go_spec          = $args{go_spec};
     my $specmeta         = $args{specmeta};
 
-    my $args_p = $meta->{args} // {};
+    my $args_prop = $meta->{args} // {};
 
-    for my $arg (keys %$args_p) {
-        my $fqarg = "$argprefix$arg";
-        my $as    = $args_p->{$arg};
-        my $sch   = $as->{schema} // ['any', {}];
-        my $type  = $sch->[0] // '';
-        my $cs    = $sch->[1] // {};
+    for my $arg (keys %$args_prop) {
+        my $fqarg    = "$argprefix$arg";
+        my $arg_spec = $args_prop->{$arg};
+        my $sch      = $arg_spec->{schema} // ['any', {}];
+        my $type     = $sch->[0] // '';
+        my $cs       = $sch->[1] // {};
 
         # XXX normalization of 'of' clause should've been handled by sah itself
         if ($type eq 'array' && $cs->{of}) {
@@ -216,8 +217,8 @@ sub _args2opts {
                     die "Invalid YAML/JSON in arg '$fqarg'";
                 }
             }
-            if ($val_set && $as->{cmdline_on_getopt}) {
-                $as->{cmdline_on_getopt}->(
+            if ($val_set && $arg_spec->{cmdline_on_getopt}) {
+                $arg_spec->{cmdline_on_getopt}->(
                     arg=>$arg, fqarg=>$fqarg, value=>$val, args=>$rargs,
                     opt=>$opt,
                 );
@@ -289,9 +290,9 @@ sub _args2opts {
             }
 
             # parse argv_aliases
-            if ($as->{cmdline_aliases} && !$aliases_processed++) {
-                for my $al (keys %{$as->{cmdline_aliases}}) {
-                    my $alspec = $as->{cmdline_aliases}{$al};
+            if ($arg_spec->{cmdline_aliases} && !$aliases_processed++) {
+                for my $al (keys %{$arg_spec->{cmdline_aliases}}) {
+                    my $alspec = $arg_spec->{cmdline_aliases}{$al};
                     my $alsch = $alspec->{schema} //
                         $alspec->{is_flag} ? [bool=>{req=>1,is=>1}] : $sch;
                     my $altype = $alsch->[0];
@@ -361,24 +362,24 @@ sub _args2opts {
             } # cmdline_aliases
 
             # submetadata
-            if ($as->{meta}) {
+            if ($arg_spec->{meta}) {
                 $rargs->{$arg} = {};
                 my $res = _args2opts(
                     %args,
                     argprefix => "$argprefix$arg\::",
-                    meta      => $as->{meta},
+                    meta      => $arg_spec->{meta},
                     rargs     => $rargs->{$arg},
                 );
                 return $res if $res;
             }
 
             # element submetadata
-            if ($as->{element_meta}) {
+            if ($arg_spec->{element_meta}) {
                 $rargs->{$arg} = [];
                 my $res = _args2opts(
                     %args,
                     argprefix => "$argprefix$arg\::",
-                    meta      => $as->{element_meta},
+                    meta      => $arg_spec->{element_meta},
                     rargs     => $rargs->{$arg},
                 );
                 return $res if $res;
@@ -827,7 +828,7 @@ sub get_args_from_argv {
     # 3. then we try to fill $rargs from remaining command-line arguments (for
     # args which have 'pos' spec specified)
 
-    my $args_p = $meta->{args};
+    my $args_prop = $meta->{args};
 
     if (@$argv) {
         my $res = get_args_from_array(
@@ -842,19 +843,19 @@ sub get_args_from_argv {
         } elsif ($res->[0] == 200) {
             my $pos_args = $res->[2];
             for my $name (keys %$pos_args) {
-                my $as  = $args_p->{$name};
-                my $val = $pos_args->{$name};
+                my $arg_spec = $args_prop->{$name};
+                my $val      = $pos_args->{$name};
                 if (exists $rargs->{$name}) {
                     return [400, "You specified option --$name but also ".
-                                "argument #".$as->{pos}] if $strict;
+                                "argument #".$arg_spec->{pos}] if $strict;
                 }
-                my $type = $as->{schema}[0];
-                my $cs   = $as->{schema}[1];
+                my $type = $arg_spec->{schema}[0];
+                my $cs   = $arg_spec->{schema}[1];
                 my $is_simple_scalar = $type =~ $re_simple_scalar;
                 my $is_array_of_simple_scalar = $type eq 'array' &&
                     $cs->{of} && $cs->{of}[0] =~ $re_simple_scalar;
 
-                if ($as->{greedy} && ref($val) eq 'ARRAY' &&
+                if ($arg_spec->{greedy} && ref($val) eq 'ARRAY' &&
                         !$is_array_of_simple_scalar) {
                     my $i = 0;
                     for (@$val) {
@@ -883,7 +884,7 @@ sub get_args_from_argv {
                         $i++;
                     }
                 }
-                if (!$as->{greedy} && !$is_simple_scalar) {
+                if (!$arg_spec->{greedy} && !$is_simple_scalar) {
                   TRY_PARSING_AS_JSON_YAML:
                     {
                         my ($success, $e, $decoded);
@@ -893,7 +894,7 @@ sub get_args_from_argv {
                                 $val = $decoded;
                                 last TRY_PARSING_AS_JSON_YAML;
                             } else {
-                                warn "Failed trying to parse argv #$as->{pos} as JSON: $e";
+                                warn "Failed trying to parse argv #$arg_spec->{pos} as JSON: $e";
                             }
                         }
                         if ($per_arg_yaml) {
@@ -902,21 +903,21 @@ sub get_args_from_argv {
                                 $val = $decoded;
                                 last TRY_PARSING_AS_JSON_YAML;
                             } else {
-                                warn "Failed trying to parse argv #$as->{pos} as YAML: $e";
+                                warn "Failed trying to parse argv #$arg_spec->{pos} as YAML: $e";
                             }
                         }
                     }
                 }
                 $rargs->{$name} = $val;
                 # we still call cmdline_on_getopt for this
-                if ($as->{cmdline_on_getopt}) {
-                    if ($as->{greedy}) {
-                        $as->{cmdline_on_getopt}->(
+                if ($arg_spec->{cmdline_on_getopt}) {
+                    if ($arg_spec->{greedy}) {
+                        $arg_spec->{cmdline_on_getopt}->(
                             arg=>$name, fqarg=>$name, value=>$_, args=>$rargs,
                             opt=>undef, # this marks that value is retrieved from cmdline arg
                         ) for @$val;
                     } else {
-                        $as->{cmdline_on_getopt}->(
+                        $arg_spec->{cmdline_on_getopt}->(
                             arg=>$name, fqarg=>$name, value=>$val, args=>$rargs,
                             opt=>undef, # this marks that value is retrieved from cmdline arg
                         );
@@ -929,16 +930,16 @@ sub get_args_from_argv {
     # 4. check missing required args
 
     my %missing_args;
-    for my $a (keys %$args_p) {
-        my $as = $args_p->{$a};
-        if (!exists($rargs->{$a})) {
-            next unless $as->{req};
+    for my $arg (keys %$args_prop) {
+        my $arg_spec = $args_prop->{$arg};
+        if (!exists($rargs->{$arg})) {
+            next unless $arg_spec->{req};
             # give a chance to hook to set missing arg
             if ($on_missing) {
-                next if $on_missing->(arg=>$a, args=>$rargs, spec=>$as);
+                next if $on_missing->(arg=>$arg, args=>$rargs, spec=>$arg_spec);
             }
-            next if exists $rargs->{$a};
-            $missing_args{$a} = 1;
+            next if exists $rargs->{$arg};
+            $missing_args{$arg} = 1;
         }
     }
 

@@ -1,5 +1,10 @@
 Revision history for Perinci-Sub-GetArgs-Agv
 
+0.63    2015-03-06 (PERLANCAR)
+
+	- Avoid arguments of type 're' to have JSON/YAML option.
+
+
 0.62    2015-02-07 (PERLANCAR)
 
         - Check against 'deps' argument specification property (currently only

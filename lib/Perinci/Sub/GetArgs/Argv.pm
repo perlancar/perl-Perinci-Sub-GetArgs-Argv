@@ -9,6 +9,7 @@ use warnings;
 #use Log::Any '$log';
 
 use Data::Sah::Normalize qw(normalize_schema);
+use Getopt::Long::Negate::EN qw(negations_for_option);
 use Getopt::Long::Util qw(parse_getopt_long_opt_spec);
 use Perinci::Sub::GetArgs::Array qw(get_args_from_array);
 use Perinci::Sub::Util qw(err);
@@ -73,19 +74,6 @@ sub _arg2opt {
     $opt;
 }
 
-sub _negations_for_opt {
-    my $word = shift;
-    if      ($word =~ /\Awith-(.+)/   ) { return ("without-$1") }
-    elsif ($word =~ /\Awithout-(.+)/) { return ("with-$1")    }
-    elsif ($word =~ /\Ais-(.+)/     ) { return ("isnt-$1")    }
-    elsif ($word =~ /\Aisnt-(.+)/   ) { return ("is-$1")      }
-    elsif ($word =~ /\Aare-(.+)/    ) { return ("arent-$1")   }
-    elsif ($word =~ /\Aarent-(.+)/  ) { return ("are-$1")     }
-    else {
-        return ("no-$word", "no$word");
-    }
-}
-
 # return one or more triplets of Getopt::Long option spec, its parsed structure,
 # and extra stuffs. we do this to avoid having to call
 # parse_getopt_long_opt_spec().
@@ -103,7 +91,7 @@ sub _opt2ospec {
             return ($opt, {opts=>[$opt]});
         } else {
             my @res;
-            my @negs = _negations_for_opt($opt);
+            my @negs = negations_for_option($opt);
             push @res, $opt, {opts=>[$opt]}, {is_neg=>0, neg_opts=>\@negs};
             for (@negs) {
                 push @res, $_, {opts=>[$_]}, {is_neg=>1, pos_opts=>[$opt]};

@@ -1,5 +1,13 @@
 Revision history for Perinci-Sub-GetArgs-Agv
 
+0.64    2015-03-24 (PERLANCAR)
+
+	- [opt] Shave off +- 2-3ms by avoiding experimental+Carp.
+
+	- Extract negations_for_option routine to Getopt::Long::Negate::EN,
+	  so it's more reusable by other modules.
+
+
 0.63    2015-03-06 (PERLANCAR)
 
 	- Avoid arguments of type 're' to have JSON/YAML option.

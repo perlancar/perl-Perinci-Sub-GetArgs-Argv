@@ -11,6 +11,7 @@ use warnings;
 use Data::Sah::Normalize qw(normalize_schema);
 use Getopt::Long::Negate::EN qw(negations_for_option);
 use Getopt::Long::Util qw(parse_getopt_long_opt_spec);
+use List::Util qw(first);
 use Perinci::Sub::GetArgs::Array qw(get_args_from_array);
 use Perinci::Sub::Util qw(err);
 
@@ -951,14 +952,13 @@ sub get_args_from_argv {
     {
         last unless $strict;
 
-        use experimental 'smartmatch';
         last unless $meta->{args_groups};
         my @specified_args = sort keys %$rargs;
         for my $group_spec (@{ $meta->{args_groups} }) {
             my $group_args = $group_spec->{args};
             next unless @$group_args > 1;
             my $rel = $group_spec->{rel};
-            my @args_in_group = grep {$_ ~~ @$group_args} @specified_args;
+            my @args_in_group = grep {my $arg = $_; first {$_ eq $arg} @$group_args} @specified_args;
             if ($rel eq 'one_of') {
                 next unless @args_in_group;
                 if (@args_in_group > 1) {
@@ -974,7 +974,7 @@ sub get_args_from_argv {
             } elsif ($rel eq 'all') {
                 next unless @args_in_group;
                 if (@args_in_group < @$group_args) {
-                    my @missing = grep {!($_ ~~ @specified_args)} @$group_args;
+                    my @missing = grep {my $arg = $_; !(first {$_ eq $arg} @specified_args)} @$group_args;
                     return [
                         400, join(
                             "",

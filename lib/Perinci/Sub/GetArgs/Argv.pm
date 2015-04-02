@@ -79,11 +79,19 @@ sub _arg2opt {
 # and extra stuffs. we do this to avoid having to call
 # parse_getopt_long_opt_spec().
 sub _opt2ospec {
-    my ($opt, $schema, $extra) = @_;
+    my ($opt, $schema, $arg_spec) = @_;
     my $type = $schema->[0];
     my $cs   = $schema->[1];
     my $is_array_of_simple_scalar = $type eq 'array' &&
         $cs->{of} && $cs->{of}[0] =~ $re_simple_scalar;
+    if ($is_array_of_simple_scalar && $arg_spec && $arg_spec->{'x.name.is_plural'}) {
+        if ($arg_spec->{'x.name.singular'}) {
+            $opt = $arg_spec->{'x.name.singular'};
+        } else {
+            require Lingua::EN::PluralToSingular;
+            $opt = Lingua::EN::PluralToSingular::to_singular($opt);
+        }
+    }
     if ($type eq 'bool') {
         if (length($opt) == 1 || $cs->{is}) {
             # single-letter option like -b doesn't get --nob.
@@ -214,7 +222,7 @@ sub _args2opts {
             }
         }; # handler
 
-        my @triplets = _opt2ospec($opt, $sch);
+        my @triplets = _opt2ospec($opt, $sch, $arg_spec);
         my $aliases_processed;
         while (my ($ospec, $parsed, $extra) = splice @triplets, 0, 3) {
             $extra //= {};

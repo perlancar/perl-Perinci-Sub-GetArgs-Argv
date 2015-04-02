@@ -24,6 +24,10 @@ my $meta = {
         ary1       => {schema=>'array', element_meta=>{v=>1.1, args=>{a=>{schema=>'str'}}}},
         with_foo   => {schema=>'bool'}, # demo negation form with-foo -> without-foo
         buf1       => {schema=>'buf'},
+
+        # demo conversion of plural -> singular option name
+        strings    => {schema=>['array', of=>'str'], 'x.name.is_plural'=> 1},
+        data       => {schema=>['array', of=>'str'], 'x.name.is_plural'=> 1, 'x.name.singular'=>'datum'},
     },
 };
 
@@ -98,6 +102,13 @@ my $expected_res = [
         'without-foo' => 'CODE',
         'buf1=s' => 'CODE',
         'buf1-base64=s' => 'CODE',
+
+        'string=s@' => 'CODE',
+        'strings-json=s' => 'CODE',
+        'strings-yaml=s' => 'CODE',
+        'datum=s@' => 'CODE',
+        'data-json=s' => 'CODE',
+        'data-yaml=s' => 'CODE',
     },
     {
         'func.specmeta' => {
@@ -130,6 +141,13 @@ my $expected_res = [
             'without-foo' => {arg=>'with_foo', fqarg=>'with_foo', parsed=>'PARSED', is_neg=>1, pos_opts=>['with-foo']},
             'buf1=s' => {arg=>'buf1', fqarg=>'buf1', parsed=>'PARSED'},
             'buf1-base64=s' => {arg=>'buf1', fqarg=>'buf1', parsed=>'PARSED', is_base64=>1},
+
+            'string=s@' => {arg=>'strings', fqarg=>'strings', parsed=>'PARSED'},
+            'strings-json=s' => {arg=>'strings', fqarg=>'strings', parsed=>'PARSED', is_json=>1},
+            'strings-yaml=s' => {arg=>'strings', fqarg=>'strings', parsed=>'PARSED', is_yaml=>1},
+            'datum=s@' => {arg=>'data', fqarg=>'data', parsed=>'PARSED'},
+            'data-json=s' => {arg=>'data', fqarg=>'data', parsed=>'PARSED', is_json=>1},
+            'data-yaml=s' => {arg=>'data', fqarg=>'data', parsed=>'PARSED', is_yaml=>1},
         },
         'func.opts' => [
             '--ary-arg1',
@@ -142,6 +160,9 @@ my $expected_res = [
             '--bool1',
             '--buf1',
             '--buf1-base64',
+            '--data-json',
+            '--data-yaml',
+            '--datum',
             '--float1',
             '--format',
             '--format-options',
@@ -158,6 +179,9 @@ my $expected_res = [
             '--noverbose',
             '--set-zero',
             '--str-arg1',
+            '--string',
+            '--strings-json',
+            '--strings-yaml',
             '--verbose',
             '--version',
             '--with-foo',
@@ -190,6 +214,9 @@ my $expected_res = [
             '--bool1',
             '--buf1',
             '--buf1-base64',
+            '--data-json',
+            '--data-yaml',
+            '--datum',
             '--float1',
             '--hash1',
             '--hash1-a',
@@ -201,6 +228,9 @@ my $expected_res = [
             '--nobool1',
             '--set-zero',
             '--str-arg1',
+            '--string',
+            '--strings-json',
+            '--strings-yaml',
             '--with-foo',
             '--without-foo',
             '-f',
@@ -253,6 +283,17 @@ my $expected_res = [
             'buf1' => [
                 '--buf1',
                 '--buf1-base64',
+            ],
+
+            'strings' => [
+                '--string',
+                '--strings-json',
+                '--strings-yaml',
+            ],
+            'data' => [
+                '--data-json',
+                '--data-yaml',
+                '--datum',
             ],
         },
         'func.opts_by_common' => {

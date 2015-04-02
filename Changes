@@ -1,5 +1,12 @@
 Revision history for Perinci-Sub-GetArgs-Agv
 
+0.65    2015-04-02 (PERLANCAR)
+
+	- [ux] Convert option name to singular if the argument
+	  specification indicates that argument name is a plural
+	  (x.name.is_plural, x.name.singular).
+
+
 0.64    2015-03-24 (PERLANCAR)
 
 	- [opt] Shave off +- 2-3ms by avoiding experimental+Carp.

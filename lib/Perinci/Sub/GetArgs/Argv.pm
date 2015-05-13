@@ -58,13 +58,13 @@ sub _parse_json {
 
 sub _parse_yaml {
     no warnings 'once';
-    require YAML;
+    require YAML::XS;
 
     my $str = shift;
 
     #local $YAML::Syck::ImplicitTyping = 1;
     my $res;
-    eval { $res = YAML::Load($str) };
+    eval { $res = YAML::XS::Load($str) };
     my $e = $@;
     return (!$e, $e, $res);
 }

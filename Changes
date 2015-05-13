@@ -1,5 +1,17 @@
 Revision history for Perinci-Sub-GetArgs-Agv
 
+0.66    2015-05-13 (PERLANCAR)
+
+        - Downgrade YAML::XS dependency as RuntimeRecommends to allow this
+          module to have CoreOrPP status.
+
+        - Don't parse argument of type date/duration as JSON/YAML.
+
+        - Remove args_groups checking, args_groups has been replaced by
+          args_rels and is checked either by Perinci::CmdLine::Lite or
+          Perinci::Sub::Wrapper.
+
+
 0.65    2015-04-02 (PERLANCAR)
 
 	- [ux] Convert option name to singular if the argument

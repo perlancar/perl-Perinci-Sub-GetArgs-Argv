@@ -29,7 +29,7 @@ $SPEC{':package'} = {
     summary => 'Get subroutine arguments from command line arguments (@ARGV)',
 };
 
-my $re_simple_scalar = qr/^(str|num|int|float|bool|buf|re)$/;
+my $re_simple_scalar = qr/^(str|num|int|float|bool|buf|re|date|duration)$/;
 
 # retun ($success?, $errmsg, $res)
 sub _parse_json {

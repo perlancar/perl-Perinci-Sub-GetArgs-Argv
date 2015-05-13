@@ -956,50 +956,6 @@ sub get_args_from_argv {
         }
     }
 
-    # 5. check 'args_groups'
-    {
-        last unless $strict;
-
-        last unless $meta->{args_groups};
-        my @specified_args = sort keys %$rargs;
-        for my $group_spec (@{ $meta->{args_groups} }) {
-            my $group_args = $group_spec->{args};
-            next unless @$group_args > 1;
-            my $rel = $group_spec->{rel};
-            my @args_in_group = grep {my $arg = $_; first {$_ eq $arg} @$group_args} @specified_args;
-            if ($rel eq 'one_of') {
-                next unless @args_in_group;
-                if (@args_in_group > 1) {
-                    my $first_arg = shift @args_in_group;
-                    return [
-                        400, join(
-                            "",
-                            "You specify '$first_arg', but also specify ",
-                            join(", ", map {"'$_'"} @args_in_group),
-                            " (only one can be specified)",
-                        )];
-                }
-            } elsif ($rel eq 'all') {
-                next unless @args_in_group;
-                if (@args_in_group < @$group_args) {
-                    my @missing = grep {my $arg = $_; !(first {$_ eq $arg} @specified_args)} @$group_args;
-                    return [
-                        400, join(
-                            "",
-                            "You specify ",
-                            join(", ", map {"'$_'"} @args_in_group),
-                            ", but don't specify ",
-                            join(", ", map {"'$_'"} @missing),
-                            " (they must all be specified together)",
-                        )];
-                }
-            } else {
-                die "BUG: Unknown rel '$rel' in args_groups" .
-                    ", only one_of/all is supported";
-            }
-        }
-    }
-
     #$log->tracef("<- get_args_from_argv(), args=%s, remaining argv=%s",
     #             $rargs, $argv);
     [200, "OK", $rargs, {

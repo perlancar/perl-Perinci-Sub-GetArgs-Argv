@@ -1,5 +1,12 @@
 Revision history for Perinci-Sub-GetArgs-Agv
 
+0.67    2015-05-19 (PERLANCAR)
+
+	- No functional changes.
+
+	- Skip relevant tests when YAML::XS is not available [CT].
+
+
 0.66    2015-05-13 (PERLANCAR)
 
         - Downgrade YAML::XS dependency as RuntimeRecommends to allow this

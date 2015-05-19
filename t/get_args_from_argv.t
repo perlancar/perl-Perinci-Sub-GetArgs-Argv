@@ -63,18 +63,27 @@ test_getargs(meta=>$meta,
              ],
              args=>{arg1=>"s", arg2=>"s", arg5=>{true=>1, false=>0}},
              name=>"json true/false");
-test_getargs(meta=>$meta, argv=>['--arg1', '{foo: false}',
-                               '--arg2', '',
-                               '--arg5', '{foo: false}'],
-           args=>{arg1=>'{foo: false}', arg2=>'', arg5=>{foo=>""}},
-           name=>"yaml parsing, done on nonscalars");
-test_getargs(meta=>$meta, argv=>['--arg1', '{"foo": false}',
-                               '--arg2', '',
-                               '--arg5', '{foo: false'],
-           error=>1,
-           name=>"yaml+json syntax error");
 
-{
+subtest yaml => sub {
+    plan skip_all => 'YAML::XS not available'
+        unless eval { require YAML::XS; 1 };
+
+    test_getargs(meta=>$meta, argv=>['--arg1', '{foo: false}',
+                                     '--arg2', '',
+                                     '--arg5', '{foo: false}'],
+                 args=>{arg1=>'{foo: false}', arg2=>'', arg5=>{foo=>""}},
+                 name=>"yaml parsing, done on nonscalars");
+    test_getargs(meta=>$meta, argv=>['--arg1', '{"foo": false}',
+                                     '--arg2', '',
+                                     '--arg5', '{foo: false'],
+                 error=>1,
+                 name=>"yaml+json syntax error");
+};
+
+subtest "nonscalar argv" => sub {
+    plan skip_all => 'YAML::XS not available'
+        unless eval { require YAML::XS; 1 };
+
     my $meta = {
         v => 1.1,
         args => {
@@ -96,7 +105,7 @@ test_getargs(meta=>$meta, argv=>['--arg1', '{"foo": false}',
                  per_arg_json=>1, per_arg_yaml=>1,
                  args=>{arg1=>[['foo']]},
                  name=>"nonscalar argv, yaml/json parsing, greedy");
-}
+};
 
 {
     my $extra  = 0;
@@ -182,12 +191,18 @@ $meta = {
         foo => {schema=>'hash'},
     },
 };
-test_getargs(meta=>$meta, argv=>[qw/--foo-yaml ~/],
-             error=>1,
-             name=>"per_arg_yaml=0");
-test_getargs(meta=>$meta, argv=>[qw/--foo-yaml ~/], per_arg_yaml=>1,
-             args=>{foo=>undef},
-             name=>"per_arg_yaml=1");
+subtest "per_arg_yaml" => sub {
+    plan skip_all => 'YAML::XS not available'
+        unless eval { require YAML::XS; 1 };
+
+    test_getargs(meta=>$meta, argv=>[qw/--foo-yaml ~/],
+                 error=>1,
+                 name=>"per_arg_yaml=0");
+    test_getargs(meta=>$meta, argv=>[qw/--foo-yaml ~/], per_arg_yaml=>1,
+                 args=>{foo=>undef},
+                 name=>"per_arg_yaml=1");
+};
+
 test_getargs(meta=>$meta, argv=>[qw/--foo-json null/],
              error=>1,
              name=>"per_arg_json=0");

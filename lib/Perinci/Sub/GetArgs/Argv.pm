@@ -58,13 +58,31 @@ sub _parse_json {
 
 sub _parse_yaml {
     no warnings 'once';
-    require YAML::XS;
+
+    state $yaml_xs_available = do {
+        if (eval { require YAML::XS; 1 }) {
+            1;
+        } else {
+            require YAML::Old;
+            0;
+        }
+    };
 
     my $str = shift;
 
     #local $YAML::Syck::ImplicitTyping = 1;
     my $res;
-    eval { $res = YAML::XS::Load($str) };
+    eval {
+        if ($yaml_xs_available) {
+            $res = YAML::XS::Load($str);
+        } else {
+            # YAML::Old is too strict, it requires "--- " header and newline
+            # ending
+            $str = "--- $str" unless $str =~ /\A--- /;
+            $str .= "$str\n" unless $str =~ /\n\z/;
+            $res = YAML::Old::Load($str);
+        }
+    };
     my $e = $@;
     return (!$e, $e, $res);
 }
@@ -205,11 +223,13 @@ sub _args2opts {
                         $rargs->{$arg} = $val;
                         last;
                     }
-                    ($success, $e, $decoded) = _parse_yaml($_[1]);
-                    if ($success) {
-                        $val_set = 1; $val = $decoded;
-                        $rargs->{$arg} = $val;
-                        last;
+                    if (eval { require YAML::XS; 1 }) {
+                        ($success, $e, $decoded) = _parse_yaml($_[1]);
+                        if ($success) {
+                            $val_set = 1; $val = $decoded;
+                            $rargs->{$arg} = $val;
+                            last;
+                        }
                     }
                     die "Invalid YAML/JSON in arg '$fqarg'";
                 }

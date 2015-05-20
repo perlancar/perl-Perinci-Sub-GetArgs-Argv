@@ -65,14 +65,14 @@ test_getargs(meta=>$meta,
              name=>"json true/false");
 
 subtest yaml => sub {
-    test_getargs(meta=>$meta, argv=>['--arg1', '{foo: false}',
+    test_getargs(meta=>$meta, argv=>['--arg1', '{foo: 0}',
                                      '--arg2', '',
-                                     '--arg5', '{foo: false}'],
-                 args=>{arg1=>'{foo: false}', arg2=>'', arg5=>{foo=>""}},
+                                     '--arg5', '{foo: 0}'],
+                 args=>{arg1=>'{foo: 0}', arg2=>'', arg5=>{foo=>0}},
                  name=>"yaml parsing, done on nonscalars");
-    test_getargs(meta=>$meta, argv=>['--arg1', '{"foo": false}',
+    test_getargs(meta=>$meta, argv=>['--arg1', '{"foo": 0}',
                                      '--arg2', '',
-                                     '--arg5', '{foo: false'],
+                                     '--arg5', '{foo: 0'],
                  error=>1,
                  name=>"yaml+json syntax error");
 };

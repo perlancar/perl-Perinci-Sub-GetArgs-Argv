@@ -79,7 +79,7 @@ sub _parse_yaml {
             # YAML::Old is too strict, it requires "--- " header and newline
             # ending
             $str = "--- $str" unless $str =~ /\A--- /;
-            $str .= "$str\n" unless $str =~ /\n\z/;
+            $str .= "\n" unless $str =~ /\n\z/;
             $res = YAML::Old::Load($str);
         }
     };
@@ -223,13 +223,11 @@ sub _args2opts {
                         $rargs->{$arg} = $val;
                         last;
                     }
-                    if (eval { require YAML::XS; 1 }) {
-                        ($success, $e, $decoded) = _parse_yaml($_[1]);
-                        if ($success) {
-                            $val_set = 1; $val = $decoded;
-                            $rargs->{$arg} = $val;
-                            last;
-                        }
+                    ($success, $e, $decoded) = _parse_yaml($_[1]);
+                    if ($success) {
+                        $val_set = 1; $val = $decoded;
+                        $rargs->{$arg} = $val;
+                        last;
                     }
                     die "Invalid YAML/JSON in arg '$fqarg'";
                 }

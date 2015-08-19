@@ -1,5 +1,11 @@
 Revision history for Perinci-Sub-GetArgs-Agv
 
+0.69    2015-08-19 (PERLANCAR)
+
+	- Reduce dependencies: replace JSON with JSON::PP (core module),
+	  make YAML::Old also optional.
+
+
 0.68    2015-05-20 (PERLANCAR)
 
 	- Require YAML::Old as fallback for YAML::XS.

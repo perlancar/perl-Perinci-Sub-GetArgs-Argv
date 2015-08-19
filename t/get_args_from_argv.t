@@ -65,6 +65,9 @@ test_getargs(meta=>$meta,
              name=>"json true/false");
 
 subtest yaml => sub {
+    plan skip_all => 'YAML modules not available'
+        unless ((eval { require YAML::XS; 1 }) || (eval { require YAML::Old; 1 }));
+
     test_getargs(meta=>$meta, argv=>['--arg1', '{foo: 0}',
                                      '--arg2', '',
                                      '--arg5', '{foo: 0}'],
@@ -78,6 +81,9 @@ subtest yaml => sub {
 };
 
 subtest "nonscalar argv" => sub {
+    plan skip_all => 'YAML modules not available'
+        unless ((eval { require YAML::XS; 1 }) || (eval { require YAML::Old; 1 }));
+
     my $meta = {
         v => 1.1,
         args => {
@@ -186,6 +192,9 @@ $meta = {
     },
 };
 subtest "per_arg_yaml" => sub {
+    plan skip_all => 'YAML modules not available'
+        unless ((eval { require YAML::XS; 1 }) || (eval { require YAML::Old; 1 }));
+
     test_getargs(meta=>$meta, argv=>[qw/--foo-yaml ~/],
                  error=>1,
                  name=>"per_arg_yaml=0");

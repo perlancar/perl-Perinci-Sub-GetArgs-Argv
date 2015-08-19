@@ -36,22 +36,25 @@ sub _parse_json {
     my $str = shift;
 
     state $json = do {
-        require JSON;
-        JSON->new->allow_nonref;
+        require JSON::PP;
+        JSON::PP->new->allow_nonref;
     };
 
-    # to rid of those JSON::XS::Boolean objects which currently choke
+    # to rid of those JSON::PP::Boolean objects which currently choke
     # Data::Sah-generated validator code. in the future Data::Sah can be
-    # modified to handle those, or we use a fork of JSON::XS which doesn't
+    # modified to handle those, or we use a fork of JSON::PP which doesn't
     # produce those in the first place (probably only when performance is
     # critical).
     state $cleanser = do {
-        require Data::Clean::FromJSON;
-        Data::Clean::FromJSON->get_cleanser;
+        if (eval { require Data::Clean::FromJSON; 1 }) {
+            Data::Clean::FromJSON->get_cleanser;
+        } else {
+            undef;
+        }
     };
 
     my $res;
-    eval { $res = $json->decode($str); $cleanser->clean_in_place($res) };
+    eval { $res = $json->decode($str); $cleanser->clean_in_place($res) if $cleanser };
     my $e = $@;
     return (!$e, $e, $res);
 }

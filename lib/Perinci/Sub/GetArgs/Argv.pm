@@ -181,6 +181,8 @@ sub _args2opts {
         my $is_simple_scalar = $type =~ $re_simple_scalar;
         my $is_array_of_simple_scalar = $type eq 'array' &&
             $cs->{of} && $cs->{of}[0] =~ $re_simple_scalar;
+        my $can_be_comma_separated = $is_array_of_simple_scalar &&
+            $cs->{of}[0] =~ /\A(int|float)\z/; # XXX as well as str that cannot contain commas
 
         my $stash = {};
 
@@ -212,8 +214,14 @@ sub _args2opts {
 
             if ($is_array_of_simple_scalar) {
                 $rargs->{$arg} //= [];
-                $val_set = 1; $val = $_[1];
-                push @{ $rargs->{$arg} }, $val;
+                $val_set = 1;
+                if ($can_be_comma_separated) {
+                    $val = [split /\s*,\s*/, $_[1]];
+                    push @{ $rargs->{$arg} }, @$val;
+                } else {
+                    $val = $_[1];
+                    push @{ $rargs->{$arg} }, $val;
+                }
             } elsif ($is_simple_scalar) {
                 $val_set = 1; $val = $_[1];
                 $rargs->{$arg} = $val;

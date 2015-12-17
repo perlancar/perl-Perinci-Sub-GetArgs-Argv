@@ -294,6 +294,9 @@ test_getargs(meta=>$meta, argv=>[qw/-S x/],
 test_getargs(meta=>$meta, argv=>['-S', '[x]', '-S', '', '-S', '"y"'],
              args=>{as=>['[x]', '', '"y"']},
              name=>"array of scalar (str, one-letter alias, 2)");
+#test_getargs(meta=>$meta, argv=>['--ai', '1,2,3'],
+#             args=>{ai=>[1,2,3]},
+#             name=>"array of scalar (int, comma-separated)");
 
 # test dot
 

@@ -9,6 +9,7 @@ use warnings;
 #use Log::Any '$log';
 
 use Data::Sah::Normalize qw(normalize_schema);
+use Data::Sah::Util::Type qw(is_simple);
 use Getopt::Long::Negate::EN qw(negations_for_option);
 use Getopt::Long::Util qw(parse_getopt_long_opt_spec);
 use List::Util qw(first);
@@ -28,8 +29,6 @@ $SPEC{':package'} = {
     v => 1.1,
     summary => 'Get subroutine arguments from command line arguments (@ARGV)',
 };
-
-my $re_simple_scalar = qr/^(str|num|int|float|bool|buf|re|date|duration)$/;
 
 # retun ($success?, $errmsg, $res)
 sub _parse_json {
@@ -103,9 +102,9 @@ sub _opt2ospec {
     my ($opt, $schema, $arg_spec) = @_;
     my $type = $schema->[0];
     my $cs   = $schema->[1];
-    my $is_array_of_simple_scalar = $type eq 'array' &&
-        $cs->{of} && $cs->{of}[0] =~ $re_simple_scalar;
-    if ($is_array_of_simple_scalar && $arg_spec && $arg_spec->{'x.name.is_plural'}) {
+    my $is_array_of_simple = $type eq 'array' &&
+        $cs->{of} && is_simple($cs->{of});
+    if ($is_array_of_simple && $arg_spec && $arg_spec->{'x.name.is_plural'}) {
         if ($arg_spec->{'x.name.singular'}) {
             $opt = $arg_spec->{'x.name.singular'};
         } else {
@@ -135,7 +134,7 @@ sub _opt2ospec {
         );
     } else {
         my $t = ($type eq 'int' ? 'i' : $type eq 'float' ? 'f' :
-                     $is_array_of_simple_scalar ? 's@' : 's');
+                     $is_array_of_simple ? 's@' : 's');
         return ("$opt=$t", {opts=>[$opt], desttype=>"", type=>$t});
     }
 }
@@ -178,10 +177,10 @@ sub _args2opts {
             $opt = $opt2;
         }
 
-        my $is_simple_scalar = $type =~ $re_simple_scalar;
-        my $is_array_of_simple_scalar = $type eq 'array' &&
-            $cs->{of} && $cs->{of}[0] =~ $re_simple_scalar;
-        my $can_be_comma_separated = $is_array_of_simple_scalar &&
+        my $is_simple = is_simple($type);
+        my $is_array_of_simple = $type eq 'array' &&
+            $cs->{of} && is_simple($cs->{of});
+        my $can_be_comma_separated = $is_array_of_simple &&
             $cs->{of}[0] =~ /\A(int|float)\z/; # XXX as well as str that cannot contain commas
 
         my $stash = {};
@@ -212,7 +211,7 @@ sub _args2opts {
                 }
             };
 
-            if ($is_array_of_simple_scalar) {
+            if ($is_array_of_simple) {
                 $rargs->{$arg} //= [];
                 $val_set = 1;
                 if ($can_be_comma_separated) {
@@ -222,7 +221,7 @@ sub _args2opts {
                     $val = $_[1];
                     push @{ $rargs->{$arg} }, $val;
                 }
-            } elsif ($is_simple_scalar) {
+            } elsif ($is_simple) {
                 $val_set = 1; $val = $_[1];
                 $rargs->{$arg} = $val;
             } else {
@@ -274,7 +273,7 @@ sub _args2opts {
                 $seen_opts->{$_}++; $seen_func_opts->{$_} = $fqarg;
             }
 
-            if ($parent_args->{per_arg_json} && $type !~ $re_simple_scalar) {
+            if ($parent_args->{per_arg_json} && !$is_simple) {
                 my $jopt = "$opt-json";
                 if ($seen_opts->{$jopt}) {
                     warn "Clash of option: $jopt, not added";
@@ -294,7 +293,7 @@ sub _args2opts {
                     $seen_opts->{$jopt}++; $seen_func_opts->{$jopt} = $fqarg;
                 }
             }
-            if ($parent_args->{per_arg_yaml} && $type !~ $re_simple_scalar) {
+            if ($parent_args->{per_arg_yaml} && !$is_simple) {
                 my $yopt = "$opt-yaml";
                 if ($seen_opts->{$yopt}) {
                     warn "Clash of option: $yopt, not added";
@@ -877,12 +876,12 @@ sub get_args_from_argv {
                 }
                 my $type = $arg_spec->{schema}[0];
                 my $cs   = $arg_spec->{schema}[1];
-                my $is_simple_scalar = $type =~ $re_simple_scalar;
-                my $is_array_of_simple_scalar = $type eq 'array' &&
-                    $cs->{of} && $cs->{of}[0] =~ $re_simple_scalar;
+                my $is_simple = is_simple($type);
+                my $is_array_of_simple = $type eq 'array' &&
+                    $cs->{of} && is_simple($cs->{of});
 
                 if ($arg_spec->{greedy} && ref($val) eq 'ARRAY' &&
-                        !$is_array_of_simple_scalar) {
+                        !$is_array_of_simple) {
                     my $i = 0;
                     for (@$val) {
                       TRY_PARSING_AS_JSON_YAML:
@@ -910,7 +909,7 @@ sub get_args_from_argv {
                         $i++;
                     }
                 }
-                if (!$arg_spec->{greedy} && !$is_simple_scalar) {
+                if (!$arg_spec->{greedy} && !$is_simple) {
                   TRY_PARSING_AS_JSON_YAML:
                     {
                         my ($success, $e, $decoded);

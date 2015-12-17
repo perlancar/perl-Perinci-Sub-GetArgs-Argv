@@ -1,5 +1,13 @@
 Revision history for Perinci-Sub-GetArgs-Agv
 
+0.70    2015-12-17 (PERLANCAR)
+
+        - [experimental][ux] When schema is array of int/float (should also
+          include bool, date, duration, or string that cannot contain commas),
+          then --opt 1,2,3 will also be accepted. This is more convenient than
+          having to do '--opt 1 --opt 2 --opt 3'.
+
+
 0.69    2015-08-19 (PERLANCAR)
 
 	- Reduce dependencies: replace JSON with JSON::PP (core module),

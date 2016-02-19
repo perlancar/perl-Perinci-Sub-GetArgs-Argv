@@ -106,7 +106,7 @@ sub _opt2ospec {
         $cs->{of} && is_simple($cs->{of});
     if ($is_array_of_simple && $arg_spec && $arg_spec->{'x.name.is_plural'}) {
         if ($arg_spec->{'x.name.singular'}) {
-            $opt = $arg_spec->{'x.name.singular'};
+            $opt = _arg2opt($arg_spec->{'x.name.singular'});
         } else {
             require Lingua::EN::PluralToSingular;
             $opt = Lingua::EN::PluralToSingular::to_singular($opt);

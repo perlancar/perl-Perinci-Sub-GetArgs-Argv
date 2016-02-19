@@ -1,5 +1,13 @@
 Revision history for Perinci-Sub-GetArgs-Agv
 
+0.71    2016-02-19 (PERLANCAR)
+
+	- [Bugfix] Forgot to option-ize name from arg spec's
+	  x.name.is_singular.
+
+	- [refactor] Use Data::Sah::Util::Type to reduce code duplication.
+
+
 0.70    2015-12-17 (PERLANCAR)
 
         - [experimental][ux] When schema is array of int/float (should also

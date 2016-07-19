@@ -9,7 +9,7 @@ use warnings;
 #use Log::Any '$log';
 
 use Data::Sah::Normalize qw(normalize_schema);
-use Data::Sah::Util::Type qw(is_simple);
+use Data::Sah::Util::Type qw(is_type is_simple);
 use Getopt::Long::Negate::EN qw(negations_for_option);
 use Getopt::Long::Util qw(parse_getopt_long_opt_spec);
 use List::Util qw(first);
@@ -95,15 +95,60 @@ sub _arg2opt {
     $opt;
 }
 
+# this routine's job is to avoid using Data::Sah::Resolve unless it needs to, to
+# reduce startup overhead
+sub _is_simple_is_array_of_simple {
+    my $sch = shift; # must be normalized
+
+    my ($is_simple, $is_array_of_simple);
+
+    my $type = $sch->[0];
+    my $cs = $sch->[1];
+    if (is_type($type)) {
+        if (is_simple($type)) {
+            $is_simple = 1;
+        } else {
+            $is_simple = 0;
+        }
+    } else {
+        # perhaps type is name of another schema
+        require Data::Sah::Resolve;
+        my $res = Data::Sah::Resolve::resolve_schema(
+            {merge_clause_sets => 0}, $sch);
+        $type = $res->[0];
+        $is_simple = is_simple($type);
+        # XXX what to do with $cs?
+    }
+
+    my $eltype;
+    if ($type eq 'array' && ($eltype = $sch->[1]{of})) {
+        if (is_type($eltype)) {
+            if (is_simple($eltype)) {
+                $is_array_of_simple = 1;
+            } else {
+                $is_array_of_simple = 0;
+            }
+        } else {
+            # perhaps type is name of another schema
+            require Data::Sah::Resolve;
+            my $res = Data::Sah::Resolve::resolve_schema(
+                {merge_clause_sets => 0}, $eltype);
+            $eltype = $res->[0];
+            $is_array_of_simple = is_simple($eltype);
+        }
+    }
+
+    #{ no warnings 'uninitialized'; say "D:$sch->[0]: is_simple=<$is_simple>, is_array_of_simple=<$is_array_of_simple>, type=<$type>, eltype=<$eltype>" };
+    ($is_simple, $is_array_of_simple, $type, $cs, $eltype);
+}
+
 # return one or more triplets of Getopt::Long option spec, its parsed structure,
 # and extra stuffs. we do this to avoid having to call
 # parse_getopt_long_opt_spec().
 sub _opt2ospec {
     my ($opt, $schema, $arg_spec) = @_;
-    my $type = $schema->[0];
-    my $cs   = $schema->[1];
-    my $is_array_of_simple = $type eq 'array' &&
-        $cs->{of} && is_simple($cs->{of});
+    my ($is_simple, $is_array_of_simple, $type, $cs, $eltype) =
+        _is_simple_is_array_of_simple($schema);
     if ($is_array_of_simple && $arg_spec && $arg_spec->{'x.name.is_plural'}) {
         if ($arg_spec->{'x.name.singular'}) {
             $opt = _arg2opt($arg_spec->{'x.name.singular'});
@@ -158,8 +203,8 @@ sub _args2opts {
         my $fqarg    = "$argprefix$arg";
         my $arg_spec = $args_prop->{$arg};
         my $sch      = $arg_spec->{schema} // ['any', {}];
-        my $type     = $sch->[0] // '';
-        my $cs       = $sch->[1] // {};
+        my ($is_simple, $is_array_of_simple, $type, $cs, $eltype) =
+            _is_simple_is_array_of_simple($sch);
 
         # XXX normalization of 'of' clause should've been handled by sah itself
         if ($type eq 'array' && $cs->{of}) {
@@ -176,12 +221,6 @@ sub _args2opts {
             }
             $opt = $opt2;
         }
-
-        my $is_simple = is_simple($type);
-        my $is_array_of_simple = $type eq 'array' &&
-            $cs->{of} && is_simple($cs->{of});
-        my $can_be_comma_separated = $is_array_of_simple &&
-            $cs->{of}[0] =~ /\A(int|float)\z/; # XXX as well as str that cannot contain commas
 
         my $stash = {};
 
@@ -213,14 +252,8 @@ sub _args2opts {
 
             if ($is_array_of_simple) {
                 $rargs->{$arg} //= [];
-                $val_set = 1;
-                if ($can_be_comma_separated) {
-                    $val = [split /\s*,\s*/, $_[1]];
-                    push @{ $rargs->{$arg} }, @$val;
-                } else {
-                    $val = $_[1];
-                    push @{ $rargs->{$arg} }, $val;
-                }
+                $val_set = 1; $val = $_[1];
+                push @{ $rargs->{$arg} }, $val;
             } elsif ($is_simple) {
                 $val_set = 1; $val = $_[1];
                 $rargs->{$arg} = $val;
@@ -874,11 +907,8 @@ sub get_args_from_argv {
                     return [400, "You specified option --$name but also ".
                                 "argument #".$arg_spec->{pos}] if $strict;
                 }
-                my $type = $arg_spec->{schema}[0];
-                my $cs   = $arg_spec->{schema}[1];
-                my $is_simple = is_simple($type);
-                my $is_array_of_simple = $type eq 'array' &&
-                    $cs->{of} && is_simple($cs->{of});
+                my ($is_simple, $is_array_of_simple, $type, $cs, $eltype) =
+                    _is_simple_is_array_of_simple($arg_spec->{schema});
 
                 if ($arg_spec->{greedy} && ref($val) eq 'ARRAY' &&
                         !$is_array_of_simple) {

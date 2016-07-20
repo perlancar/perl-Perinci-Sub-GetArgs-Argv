@@ -1,5 +1,11 @@
 Revision history for Perinci-Sub-GetArgs-Agv
 
+0.72    2016-07-20 (PERLANCAR)
+
+        - Resolve base type of schemas, to support arguments that have schema
+          that is based on another schema.
+
+
 0.71    2016-02-19 (PERLANCAR)
 
 	- [Bugfix] Forgot to option-ize name from arg spec's

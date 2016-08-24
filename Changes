@@ -1,5 +1,16 @@
 Revision history for Perinci-Sub-GetArgs-Agv
 
+0.73    2016-08-24 (PERLANCAR)
+
+        - For argument that has schema containing coerce rules from simple type,
+          recognize it as simple (meaning not creating a --ARG-json or
+          --ARG-yaml option for it but simply --ARG). For example, suppose
+          argument 'foo' has schema ['array', of=>'str',
+          'x.perl.coerce_rules'=>['str_comma_sep']. This means we can specify
+          the value using something like '--foo 1,2,3' instead of "--foo-json
+          '[1,2,3]'".
+
+
 0.72    2016-07-20 (PERLANCAR)
 
         - Resolve base type of schemas, to support arguments that have schema

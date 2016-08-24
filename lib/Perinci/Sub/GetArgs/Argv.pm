@@ -95,6 +95,34 @@ sub _arg2opt {
     $opt;
 }
 
+# this subroutine checks whether a schema mentions a coercion rule from simple
+# types (e.g. 'str_comma_sep', etc). this subroutine can accept a normalized sah
+# schema, or if $is_resolve_res is set to true, result from
+# Data::Sah::Resolve::resolve_schema
+sub _is_coercible_from_simple {
+    #my $type;
+    my @csets;
+    if ($_[1]) {
+        # resolve result
+        #$type = $_[0][0];
+        @csets = @{$_[0][1]};
+    } else {
+        # normalized sah schema
+        #$type = $_[0][0];
+        @csets = ($_[0][1]);
+    }
+    for my $cset (@csets) {
+        my $rules = $cset->{'x.perl.coerce_rules'} //
+            $cset->{'x.coerce_rules'};
+        next unless $rules;
+        for my $rule (@$rules) {
+            next unless $rule =~ /\A([^_]+)_/;
+            return 1 if is_simple($1);
+        }
+    }
+    0;
+}
+
 # this routine's job is to avoid using Data::Sah::Resolve unless it needs to, to
 # reduce startup overhead
 sub _is_simple_is_array_of_simple {
@@ -103,9 +131,11 @@ sub _is_simple_is_array_of_simple {
     my ($is_simple, $is_array_of_simple);
 
     my $type = $sch->[0];
-    my $cs = $sch->[1];
+    my $cset = $sch->[1];
     if (is_type($type)) {
         if (is_simple($type)) {
+            $is_simple = 1;
+        } elsif (_is_coercible_from_simple($sch)) {
             $is_simple = 1;
         } else {
             $is_simple = 0;
@@ -116,8 +146,15 @@ sub _is_simple_is_array_of_simple {
         my $res = Data::Sah::Resolve::resolve_schema(
             {merge_clause_sets => 0}, $sch);
         $type = $res->[0];
-        $is_simple = is_simple($type);
-        # XXX what to do with $cs?
+        # XXX currently we just use the first clause set
+        $cset = $res->[1][0] // {};
+        if (is_simple($type)) {
+            $is_simple = 1;
+        } elsif (_is_coercible_from_simple($res, 1)) {
+            $is_simple = 1;
+        } else {
+            $is_simple = 0;
+        }
     }
 
     my $eltype;
@@ -139,7 +176,7 @@ sub _is_simple_is_array_of_simple {
     }
 
     #{ no warnings 'uninitialized'; say "D:$sch->[0]: is_simple=<$is_simple>, is_array_of_simple=<$is_array_of_simple>, type=<$type>, eltype=<$eltype>" };
-    ($is_simple, $is_array_of_simple, $type, $cs, $eltype);
+    ($is_simple, $is_array_of_simple, $type, $cset, $eltype);
 }
 
 # return one or more triplets of Getopt::Long option spec, its parsed structure,
@@ -147,41 +184,67 @@ sub _is_simple_is_array_of_simple {
 # parse_getopt_long_opt_spec().
 sub _opt2ospec {
     my ($opt, $schema, $arg_spec) = @_;
-    my ($is_simple, $is_array_of_simple, $type, $cs, $eltype) =
+    my ($is_simple, $is_array_of_simple, $type, $cset, $eltype) =
         _is_simple_is_array_of_simple($schema);
-    if ($is_array_of_simple && $arg_spec && $arg_spec->{'x.name.is_plural'}) {
-        if ($arg_spec->{'x.name.singular'}) {
-            $opt = _arg2opt($arg_spec->{'x.name.singular'});
-        } else {
-            require Lingua::EN::PluralToSingular;
-            $opt = Lingua::EN::PluralToSingular::to_singular($opt);
-        }
-    }
-    if ($type eq 'bool') {
-        if (length($opt) == 1 || $cs->{is}) {
-            # single-letter option like -b doesn't get --nob.
-            # [bool=>{is=>1}] also means it's a flag and should not get
-            # --nofoo.
-            return ($opt, {opts=>[$opt]});
-        } else {
-            my @res;
-            my @negs = negations_for_option($opt);
-            push @res, $opt, {opts=>[$opt]}, {is_neg=>0, neg_opts=>\@negs};
-            for (@negs) {
-                push @res, $_, {opts=>[$_]}, {is_neg=>1, pos_opts=>[$opt]};
+
+    my (@opts, @types, @isaos);
+
+    if ($is_array_of_simple) {
+        my $singular_opt;
+        if ($arg_spec && $arg_spec->{'x.name.is_plural'}) {
+            if ($arg_spec->{'x.name.singular'}) {
+                $singular_opt = _arg2opt($arg_spec->{'x.name.singular'});
+            } else {
+                require Lingua::EN::PluralToSingular;
+                $singular_opt = Lingua::EN::PluralToSingular::to_singular($opt);
             }
-            return @res;
+        } else {
+            $singular_opt = $opt;
         }
-    } elsif ($type eq 'buf') {
-        return (
-            "$opt=s", {opts=>[$opt], desttype=>"", type=>"s"}, undef,
-            "$opt-base64=s", {opts=>["$opt-base64"], desttype=>"", type=>"s"}, {is_base64=>1},
-        );
-    } else {
-        my $t = ($type eq 'int' ? 'i' : $type eq 'float' ? 'f' :
-                     $is_array_of_simple ? 's@' : 's');
-        return ("$opt=$t", {opts=>[$opt], desttype=>"", type=>$t});
+        push @opts , $singular_opt;
+        push @types, $eltype;
+        push @isaos, 1;
     }
+
+    if ($is_simple || !@opts) {
+        push @opts , $opt;
+        push @types, $type;
+        push @isaos, 0;
+    }
+
+    my @res;
+
+    for my $i (0..$#opts) {
+        my $opt   = $opts[$i];
+        my $type  = $types[$i];
+        my $isaos = $isaos[$i];
+
+        if ($type eq 'bool') {
+            if (length($opt) == 1 || $cset->{is}) {
+                # single-letter option like -b doesn't get --nob.
+                # [bool=>{is=>1}] also means it's a flag and should not get
+                # --nofoo.
+                push @res, ($opt, {opts=>[$opt]}), undef;
+            } else {
+                my @negs = negations_for_option($opt);
+                push @res, $opt, {opts=>[$opt]}, {is_neg=>0, neg_opts=>\@negs};
+                for (@negs) {
+                    push @res, $_, {opts=>[$_]}, {is_neg=>1, pos_opts=>[$opt]};
+                }
+            }
+        } elsif ($type eq 'buf') {
+            push @res, (
+                "$opt=s", {opts=>[$opt], desttype=>"", type=>"s"}, undef,
+                "$opt-base64=s", {opts=>["$opt-base64"], desttype=>"", type=>"s"}, {is_base64=>1},
+            );
+        } else {
+            my $t = ($type eq 'int' ? 'i' : $type eq 'float' ? 'f' :
+                         $isaos ? 's@' : 's');
+            push @res, ("$opt=$t", {opts=>[$opt], desttype=>"", type=>$t}, undef);
+        }
+    }
+
+    @res;
 }
 
 sub _args2opts {
@@ -203,12 +266,12 @@ sub _args2opts {
         my $fqarg    = "$argprefix$arg";
         my $arg_spec = $args_prop->{$arg};
         my $sch      = $arg_spec->{schema} // ['any', {}];
-        my ($is_simple, $is_array_of_simple, $type, $cs, $eltype) =
+        my ($is_simple, $is_array_of_simple, $type, $cset, $eltype) =
             _is_simple_is_array_of_simple($sch);
 
         # XXX normalization of 'of' clause should've been handled by sah itself
-        if ($type eq 'array' && $cs->{of}) {
-            $cs->{of} = normalize_schema($cs->{of});
+        if ($type eq 'array' && $cset->{of}) {
+            $cset->{of} = normalize_schema($cset->{of});
         }
         my $opt = _arg2opt($fqarg);
         if ($seen_opts->{$opt}) {
@@ -250,13 +313,13 @@ sub _args2opts {
                 }
             };
 
-            if ($is_array_of_simple) {
+            if ($is_simple) {
+                $val_set = 1; $val = $_[1];
+                $rargs->{$arg} = $val;
+            } elsif ($is_array_of_simple) {
                 $rargs->{$arg} //= [];
                 $val_set = 1; $val = $_[1];
                 push @{ $rargs->{$arg} }, $val;
-            } elsif ($is_simple) {
-                $val_set = 1; $val = $_[1];
-                $rargs->{$arg} = $val;
             } else {
                 {
                     my ($success, $e, $decoded);
@@ -907,7 +970,7 @@ sub get_args_from_argv {
                     return [400, "You specified option --$name but also ".
                                 "argument #".$arg_spec->{pos}] if $strict;
                 }
-                my ($is_simple, $is_array_of_simple, $type, $cs, $eltype) =
+                my ($is_simple, $is_array_of_simple, $type, $cset, $eltype) =
                     _is_simple_is_array_of_simple($arg_spec->{schema});
 
                 if ($arg_spec->{greedy} && ref($val) eq 'ARRAY' &&

@@ -28,6 +28,9 @@ my $meta = {
         # demo conversion of plural -> singular option name
         strings    => {schema=>['array', of=>'str'], 'x.name.is_plural'=> 1},
         data       => {schema=>['array', of=>'str'], 'x.name.is_plural'=> 1, 'x.name.singular'=>'datum'},
+
+        # demo option being treated as simple when coercible from simple type
+        incl_mice  => {schema=>['array', of=>'str', 'x.perl.coerce_rules'=>['str_comma_sep']], 'x.name.is_plural'=> 1, 'x.name.singular'=>'incl_mouse'},
     },
 };
 
@@ -109,6 +112,9 @@ my $expected_res = [
         'datum=s@' => 'CODE',
         'data-json=s' => 'CODE',
         'data-yaml=s' => 'CODE',
+
+        'incl-mice=s' => 'CODE',
+        'incl-mouse=s@' => 'CODE',
     },
     {
         'func.specmeta' => {
@@ -148,6 +154,9 @@ my $expected_res = [
             'datum=s@' => {arg=>'data', fqarg=>'data', parsed=>'PARSED'},
             'data-json=s' => {arg=>'data', fqarg=>'data', parsed=>'PARSED', is_json=>1},
             'data-yaml=s' => {arg=>'data', fqarg=>'data', parsed=>'PARSED', is_yaml=>1},
+
+            'incl-mice=s' => {arg=>'incl_mice', fqarg=>'incl_mice', parsed=>'PARSED'},
+            'incl-mouse=s@' => {arg=>'incl_mice', fqarg=>'incl_mice', parsed=>'PARSED'},
         },
         'func.opts' => [
             '--ary-arg1',
@@ -172,6 +181,8 @@ my $expected_res = [
             '--hash1-yaml',
             '--help',
             '--help-arg',
+            '--incl-mice',
+            '--incl-mouse',
             '--int1',
             '--no-bool1',
             '--no-verbose',
@@ -223,6 +234,8 @@ my $expected_res = [
             '--hash1-json',
             '--hash1-yaml',
             '--help-arg',
+            '--incl-mice',
+            '--incl-mouse',
             '--int1',
             '--no-bool1',
             '--nobool1',
@@ -294,6 +307,10 @@ my $expected_res = [
                 '--data-json',
                 '--data-yaml',
                 '--datum',
+            ],
+            'incl_mice' => [
+                '--incl-mice',
+                '--incl-mouse',
             ],
         },
         'func.opts_by_common' => {

@@ -517,7 +517,7 @@ $SPEC{gen_getopt_long_spec_from_meta} = {
     summary     => 'Generate Getopt::Long spec from Rinci function metadata',
     description => <<'_',
 
-This routine will produce a `Getopt::Long` specification from Rinci function
+This routine will produce a <pm:Getopt::Long> specification from Rinci function
 metadata, as well as some more data structure in the result metadata to help
 producing a command-line help/usage message.
 
@@ -734,7 +734,7 @@ $SPEC{get_args_from_argv} = {
 Using information in Rinci function metadata's `args` property, parse command
 line arguments `@argv` into hash `%args`, suitable for passing into subroutines.
 
-Currently uses Getopt::Long's GetOptions to do the parsing.
+Currently uses <pm:Getopt::Long>'s `GetOptions` to do the parsing.
 
 As with GetOptions, this function modifies its `argv` argument, so you might
 want to copy the original `argv` first (or pass a copy instead) if you want to

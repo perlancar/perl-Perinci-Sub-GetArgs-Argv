@@ -265,6 +265,8 @@ sub _args2opts {
     for my $arg (keys %$args_prop) {
         my $fqarg    = "$argprefix$arg";
         my $arg_spec = $args_prop->{$arg};
+        next if grep { $_ eq 'hidden' || $_ eq 'hidden-cli' }
+            @{ $arg_spec->{tags} // [] };
         my $sch      = $arg_spec->{schema} // ['any', {}];
         my ($is_simple, $is_array_of_simple, $type, $cset, $eltype) =
             _is_simple_is_array_of_simple($sch);

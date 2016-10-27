@@ -1,5 +1,11 @@
 Revision history for Perinci-Sub-GetArgs-Agv
 
+0.75    2016-10-27 (PERLANCAR)
+
+	- Skip generating option for hidden arguments (arguments with tag
+	  'hidden' or 'hidden-cli').
+
+
 0.74    2016-10-07 (PERLANCAR)
 
 	- No functional changes.

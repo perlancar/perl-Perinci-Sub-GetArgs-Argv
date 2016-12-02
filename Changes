@@ -1,5 +1,11 @@
 Revision history for Perinci-Sub-GetArgs-Agv
 
+0.76    2016-12-02 (PERLANCAR)
+
+	- Set Getopt::Long configuration gnu_compat to allow setting empty value
+          '--name='.
+
+
 0.75    2016-10-27 (PERLANCAR)
 
 	- Skip generating option for hidden arguments (arguments with tag

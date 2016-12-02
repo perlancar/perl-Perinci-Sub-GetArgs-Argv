@@ -940,7 +940,7 @@ sub get_args_from_argv {
         local $SIG{__WARN__} = sub{} if !$strict;
         my $old_go_conf = Getopt::Long::Configure(
             $strict ? "no_pass_through" : "pass_through",
-            "no_ignore_case", "permute", "bundling", "no_getopt_compat");
+            "no_ignore_case", "permute", "bundling", "no_getopt_compat", "gnu_compat");
         my $res = Getopt::Long::GetOptionsFromArray($argv, %$go_spec);
         Getopt::Long::Configure($old_go_conf);
         unless ($res) {

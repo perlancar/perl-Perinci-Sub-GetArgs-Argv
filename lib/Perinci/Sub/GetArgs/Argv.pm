@@ -123,60 +123,75 @@ sub _is_coercible_from_simple {
     0;
 }
 
+sub _is_simple_or_coercible_from_simple {
+    my $nsch = shift;
+    is_simple($nsch) || _is_coercible_from_simple($nsch);
+}
+
 # this routine's job is to avoid using Data::Sah::Resolve unless it needs to, to
 # reduce startup overhead
-sub _is_simple_is_array_of_simple {
-    my $sch = shift; # must be normalized
+sub _is_simple_or_array_of_simple_or_hash_of_simple {
+    my $nsch = shift;
 
-    my ($is_simple, $is_array_of_simple);
+    my ($is_simple, $is_array_of_simple, $is_hash_of_simple, $eltype);
 
-    my $type = $sch->[0];
-    my $cset = $sch->[1];
-    if (is_type($type)) {
-        if (is_simple($type)) {
-            $is_simple = 1;
-        } elsif (_is_coercible_from_simple($sch)) {
-            $is_simple = 1;
-        } else {
-            $is_simple = 0;
-        }
-    } else {
-        # perhaps type is name of another schema
-        require Data::Sah::Resolve;
-        my $res = Data::Sah::Resolve::resolve_schema(
-            {merge_clause_sets => 0}, $sch);
-        $type = $res->[0];
-        # XXX currently we just use the first clause set
-        $cset = $res->[1][0] // {};
-        if (is_simple($type)) {
-            $is_simple = 1;
-        } elsif (_is_coercible_from_simple($res, 1)) {
-            $is_simple = 1;
-        } else {
-            $is_simple = 0;
-        }
-    }
+    my $type = $nsch->[0];
+    my $cset = $nsch->[1];
 
-    my $eltype;
-    if ($type eq 'array' && ($eltype = $sch->[1]{of})) {
-        if (is_type($eltype)) {
-            if (is_simple($eltype)) {
-                $is_array_of_simple = 1;
-            } else {
-                $is_array_of_simple = 0;
-            }
-        } else {
-            # perhaps type is name of another schema
+    {
+        # if not known as builtin type, then resolve it first
+        unless (is_type($nsch)) {
             require Data::Sah::Resolve;
             my $res = Data::Sah::Resolve::resolve_schema(
-                {merge_clause_sets => 0}, $eltype);
-            $eltype = $res->[0];
-            $is_array_of_simple = is_simple($eltype);
+                {merge_clause_sets => 0}, $nsch);
+            $type = $res->[0];
+            $cset = $res->[1][0] // {};
+        }
+
+        $is_simple = _is_simple_or_coercible_from_simple($nsch);
+        last if $is_simple;
+
+        if ($type eq 'array') {
+            my $elsch = $cset->{of} // $cset->{each_elem};
+            last unless $elsch;
+            $elsch = normalize_schema($elsch);
+            $eltype = $elsch->[0];
+
+            # if not known as builtin type, then resolve it first
+            unless (is_type($elsch)) {
+                require Data::Sah::Resolve;
+                my $res = Data::Sah::Resolve::resolve_schema(
+                    {merge_clause_sets => 0}, $elsch);
+                $elsch = [$res->[0], $res->[1][0] // {}]; # XXX we only take the first clause set
+                $eltype = $res->[0];
+            }
+
+            $is_array_of_simple = _is_simple_or_coercible_from_simple($elsch);
+            last;
+        }
+
+        if ($type eq 'hash') {
+            my $elsch = $cset->{of} // $cset->{each_value} // $cset->{each_elem};
+            last unless $elsch;
+            $elsch = normalize_schema($elsch);
+            $eltype = $elsch->[0];
+
+            # if not known as builtin type, then resolve it first
+            unless (is_type($elsch)) {
+                require Data::Sah::Resolve;
+                my $res = Data::Sah::Resolve::resolve_schema(
+                    {merge_clause_sets => 0}, $elsch);
+                $elsch = [$res->[0], $res->[1][0] // {}]; # XXX we only take the first clause set
+                $eltype = $res->[0];
+            }
+
+            $is_hash_of_simple = _is_simple_or_coercible_from_simple($elsch);
+            last;
         }
     }
 
-    #{ no warnings 'uninitialized'; say "D:$sch->[0]: is_simple=<$is_simple>, is_array_of_simple=<$is_array_of_simple>, type=<$type>, eltype=<$eltype>" };
-    ($is_simple, $is_array_of_simple, $type, $cset, $eltype);
+    #{ no warnings 'uninitialized'; say "D:$sch->[0]: is_simple=<$is_simple>, is_array_of_simple=<$is_array_of_simple>, is_hash_of_simple=<$is_hash_of_simple>, type=<$type>, eltype=<$eltype>" };
+    ($is_simple, $is_array_of_simple, $is_hash_of_simple, $type, $cset, $eltype);
 }
 
 # return one or more triplets of Getopt::Long option spec, its parsed structure,
@@ -184,12 +199,12 @@ sub _is_simple_is_array_of_simple {
 # parse_getopt_long_opt_spec().
 sub _opt2ospec {
     my ($opt, $schema, $arg_spec) = @_;
-    my ($is_simple, $is_array_of_simple, $type, $cset, $eltype) =
-        _is_simple_is_array_of_simple($schema);
+    my ($is_simple, $is_array_of_simple, $is_hash_of_simple, $type, $cset, $eltype) =
+        _is_simple_or_array_of_simple_or_hash_of_simple($schema);
 
-    my (@opts, @types, @isaos);
+    my (@opts, @types, @isaos, @ishos);
 
-    if ($is_array_of_simple) {
+    if ($is_array_of_simple || $is_hash_of_simple) {
         my $singular_opt;
         if ($arg_spec && $arg_spec->{'x.name.is_plural'}) {
             if ($arg_spec->{'x.name.singular'}) {
@@ -203,13 +218,15 @@ sub _opt2ospec {
         }
         push @opts , $singular_opt;
         push @types, $eltype;
-        push @isaos, 1;
+        push @isaos, $is_array_of_simple ? 1:0;
+        push @ishos, $is_hash_of_simple  ? 1:0;
     }
 
     if ($is_simple || !@opts) {
         push @opts , $opt;
         push @types, $type;
         push @isaos, 0;
+        push @ishos, 0;
     }
 
     my @res;
@@ -218,6 +235,7 @@ sub _opt2ospec {
         my $opt   = $opts[$i];
         my $type  = $types[$i];
         my $isaos = $isaos[$i];
+        my $ishos = $ishos[$i];
 
         if ($type eq 'bool') {
             if (length($opt) == 1 || $cset->{is}) {
@@ -239,7 +257,7 @@ sub _opt2ospec {
             );
         } else {
             my $t = ($type eq 'int' ? 'i' : $type eq 'float' ? 'f' :
-                         $isaos ? 's@' : 's');
+                         $isaos ? 's@' : $ishos ? 's%' : 's');
             push @res, ("$opt=$t", {opts=>[$opt], desttype=>"", type=>$t}, undef);
         }
     }
@@ -268,8 +286,8 @@ sub _args2opts {
         next if grep { $_ eq 'hidden' || $_ eq 'hidden-cli' }
             @{ $arg_spec->{tags} // [] };
         my $sch      = $arg_spec->{schema} // ['any', {}];
-        my ($is_simple, $is_array_of_simple, $type, $cset, $eltype) =
-            _is_simple_is_array_of_simple($sch);
+        my ($is_simple, $is_array_of_simple, $is_hash_of_simple, $type, $cset, $eltype) =
+            _is_simple_or_array_of_simple_or_hash_of_simple($sch);
 
         # XXX normalization of 'of' clause should've been handled by sah itself
         if ($type eq 'array' && $cset->{of}) {
@@ -322,6 +340,10 @@ sub _args2opts {
                 $rargs->{$arg} //= [];
                 $val_set = 1; $val = $_[1];
                 push @{ $rargs->{$arg} }, $val;
+            } elsif ($is_hash_of_simple) {
+                $rargs->{$arg} //= {};
+                $val_set = 1; $val = $_[2];
+                $rargs->{$arg}{$_[1]} = $val;
             } else {
                 {
                     my ($success, $e, $decoded);
@@ -972,11 +994,11 @@ sub get_args_from_argv {
                     return [400, "You specified option --$name but also ".
                                 "argument #".$arg_spec->{pos}] if $strict;
                 }
-                my ($is_simple, $is_array_of_simple, $type, $cset, $eltype) =
-                    _is_simple_is_array_of_simple($arg_spec->{schema});
+                my ($is_simple, $is_array_of_simple, $is_hash_of_simple, $type, $cset, $eltype) =
+                    _is_simple_or_array_of_simple_or_hash_of_simple($arg_spec->{schema});
 
                 if ($arg_spec->{greedy} && ref($val) eq 'ARRAY' &&
-                        !$is_array_of_simple) {
+                        !$is_array_of_simple && !$is_hash_of_simple) {
                     my $i = 0;
                     for (@$val) {
                       TRY_PARSING_AS_JSON_YAML:

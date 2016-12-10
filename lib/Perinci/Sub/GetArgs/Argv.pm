@@ -149,6 +149,7 @@ sub _is_simple_or_array_of_simple_or_hash_of_simple {
         }
 
         $is_simple = _is_simple_or_coercible_from_simple($nsch);
+        use DD; dd {nsch=>$nsch, is_simple=>$is_simple};
         last if $is_simple;
 
         if ($type eq 'array') {

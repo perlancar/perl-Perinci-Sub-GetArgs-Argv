@@ -27,9 +27,11 @@ my $meta = {
 
         # demo conversion of plural -> singular option name
         strings    => {schema=>['array', of=>'str'], 'x.name.is_plural'=> 1},
-        data       => {schema=>['array', of=>'str'], 'x.name.is_plural'=> 1, 'x.name.singular'=>'datum'},
+        some_data  => {schema=>['hash' , of=>'str'], 'x.name.is_plural'=> 1, 'x.name.singular'=>'a_datum'},
 
-        # demo option being treated as simple when coercible from simple type
+        # demo option being treated as simple when coercible from simple type.
+        # in this case, the option does not become --incl-mouse=s@ but still the
+        # single --incl-mice=s
         incl_mice  => {schema=>['array', of=>'str', 'x.perl.coerce_rules'=>['str_comma_sep']], 'x.name.is_plural'=> 1, 'x.name.singular'=>'incl_mouse'},
     },
 };
@@ -109,12 +111,11 @@ my $expected_res = [
         'string=s@' => 'CODE',
         'strings-json=s' => 'CODE',
         'strings-yaml=s' => 'CODE',
-        'datum=s@' => 'CODE',
-        'data-json=s' => 'CODE',
-        'data-yaml=s' => 'CODE',
+        'a-datum=s%' => 'CODE',
+        'some-data-json=s' => 'CODE',
+        'some-data-yaml=s' => 'CODE',
 
         'incl-mice=s' => 'CODE',
-        'incl-mouse=s@' => 'CODE',
     },
     {
         'func.specmeta' => {
@@ -151,14 +152,14 @@ my $expected_res = [
             'string=s@' => {arg=>'strings', fqarg=>'strings', parsed=>'PARSED'},
             'strings-json=s' => {arg=>'strings', fqarg=>'strings', parsed=>'PARSED', is_json=>1},
             'strings-yaml=s' => {arg=>'strings', fqarg=>'strings', parsed=>'PARSED', is_yaml=>1},
-            'datum=s@' => {arg=>'data', fqarg=>'data', parsed=>'PARSED'},
-            'data-json=s' => {arg=>'data', fqarg=>'data', parsed=>'PARSED', is_json=>1},
-            'data-yaml=s' => {arg=>'data', fqarg=>'data', parsed=>'PARSED', is_yaml=>1},
+            'a-datum=s%' => {arg=>'some_data', fqarg=>'some_data', parsed=>'PARSED'},
+            'some-data-json=s' => {arg=>'some_data', fqarg=>'some_data', parsed=>'PARSED', is_json=>1},
+            'some-data-yaml=s' => {arg=>'some_data', fqarg=>'some_data', parsed=>'PARSED', is_yaml=>1},
 
             'incl-mice=s' => {arg=>'incl_mice', fqarg=>'incl_mice', parsed=>'PARSED'},
-            'incl-mouse=s@' => {arg=>'incl_mice', fqarg=>'incl_mice', parsed=>'PARSED'},
         },
         'func.opts' => [
+            '--a-datum',
             '--ary-arg1',
             '--ary-arg1-json',
             '--ary-arg1-yaml',
@@ -169,9 +170,6 @@ my $expected_res = [
             '--bool1',
             '--buf1',
             '--buf1-base64',
-            '--data-json',
-            '--data-yaml',
-            '--datum',
             '--float1',
             '--format',
             '--format-options',
@@ -182,13 +180,14 @@ my $expected_res = [
             '--help',
             '--help-arg',
             '--incl-mice',
-            '--incl-mouse',
             '--int1',
             '--no-bool1',
             '--no-verbose',
             '--nobool1',
             '--noverbose',
             '--set-zero',
+            '--some-data-json',
+            '--some-data-yaml',
             '--str-arg1',
             '--string',
             '--strings-json',
@@ -215,6 +214,7 @@ my $expected_res = [
             '-v',
         ],
         'func.func_opts' => [
+            '--a-datum',
             '--ary-arg1',
             '--ary-arg1-json',
             '--ary-arg1-yaml',
@@ -225,9 +225,6 @@ my $expected_res = [
             '--bool1',
             '--buf1',
             '--buf1-base64',
-            '--data-json',
-            '--data-yaml',
-            '--datum',
             '--float1',
             '--hash1',
             '--hash1-a',
@@ -235,11 +232,12 @@ my $expected_res = [
             '--hash1-yaml',
             '--help-arg',
             '--incl-mice',
-            '--incl-mouse',
             '--int1',
             '--no-bool1',
             '--nobool1',
             '--set-zero',
+            '--some-data-json',
+            '--some-data-yaml',
             '--str-arg1',
             '--string',
             '--strings-json',
@@ -303,14 +301,13 @@ my $expected_res = [
                 '--strings-json',
                 '--strings-yaml',
             ],
-            'data' => [
-                '--data-json',
-                '--data-yaml',
-                '--datum',
+            'some_data' => [
+                '--a-datum',
+                '--some-data-json',
+                '--some-data-yaml',
             ],
             'incl_mice' => [
                 '--incl-mice',
-                '--incl-mouse',
             ],
         },
         'func.opts_by_common' => {

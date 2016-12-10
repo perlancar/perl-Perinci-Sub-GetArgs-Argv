@@ -1,5 +1,11 @@
 Revision history for Perinci-Sub-GetArgs-Agv
 
+0.77    2016-12-10 (PERLANCAR)
+
+	- Accept hash argument as --arg key1=val1 --arg key2=val2 ... using
+	  Getopt::Long's '%' desttype.
+
+
 0.76    2016-12-02 (PERLANCAR)
 
 	- Set Getopt::Long configuration gnu_compat to allow setting empty value

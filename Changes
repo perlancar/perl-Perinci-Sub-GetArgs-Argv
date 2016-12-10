@@ -1,5 +1,11 @@
 Revision history for Perinci-Sub-GetArgs-Agv
 
+0.78    2016-12-10 (PERLANCAR)
+
+	- [dist] Forgot to bump prereq version Perinci::Sub::GetArgs::Array
+	  -> 0.16 (hash support).
+
+
 0.77    2016-12-10 (PERLANCAR)
 
 	- Accept hash argument as --arg key1=val1 --arg key2=val2 ... using

@@ -149,7 +149,6 @@ sub _is_simple_or_array_of_simple_or_hash_of_simple {
         }
 
         $is_simple = _is_simple_or_coercible_from_simple($nsch);
-        use DD; dd {nsch=>$nsch, is_simple=>$is_simple};
         last if $is_simple;
 
         if ($type eq 'array') {
@@ -191,7 +190,7 @@ sub _is_simple_or_array_of_simple_or_hash_of_simple {
         }
     }
 
-    #{ no warnings 'uninitialized'; say "D:$sch->[0]: is_simple=<$is_simple>, is_array_of_simple=<$is_array_of_simple>, is_hash_of_simple=<$is_hash_of_simple>, type=<$type>, eltype=<$eltype>" };
+    #{ no warnings 'uninitialized'; say "D:$nsch->[0]: is_simple=<$is_simple>, is_array_of_simple=<$is_array_of_simple>, is_hash_of_simple=<$is_hash_of_simple>, type=<$type>, eltype=<$eltype>" };
     ($is_simple, $is_array_of_simple, $is_hash_of_simple, $type, $cset, $eltype);
 }
 
@@ -257,8 +256,8 @@ sub _opt2ospec {
                 "$opt-base64=s", {opts=>["$opt-base64"], desttype=>"", type=>"s"}, {is_base64=>1},
             );
         } else {
-            my $t = ($type eq 'int' ? 'i' : $type eq 'float' ? 'f' :
-                         $isaos ? 's@' : $ishos ? 's%' : 's');
+            my $t = ($type eq 'int' ? 'i' : $type eq 'float' ? 'f' : 's') .
+                ($isaos ? '@' : $ishos ? '%' : '');
             push @res, ("$opt=$t", {opts=>[$opt], desttype=>"", type=>$t}, undef);
         }
     }

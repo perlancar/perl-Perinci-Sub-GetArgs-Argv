@@ -298,6 +298,37 @@ test_getargs(meta=>$meta, argv=>['-S', '[x]', '-S', '', '-S', '"y"'],
 #             args=>{ai=>[1,2,3]},
 #             name=>"array of scalar (int, comma-separated)");
 
+subtest "hash of scalar (--foo k1=v1 --foo k2=v2)" => sub {
+    my $meta = {
+        v => 1.1,
+        args => {
+            hi => {schema=>[hash => {of=>'int'} ]},
+            hs => {schema=>[hash => {of=>'str*'}], cmdline_aliases=>{S=>{}}},
+        },
+    };
+    test_getargs(meta=>$meta, argv=>[qw/--hs 1/],
+                 status=>500,
+                 name=>"invalid pair syntax");
+    test_getargs(meta=>$meta, argv=>[qw/--hi k1=x/],
+                 status=>500,
+                 name=>"int, type checked");
+    test_getargs(meta=>$meta, argv=>[qw/--hi k1=1/],
+                 args=>{hi=>{k1=>1}},
+                 name=>"int, 1");
+    test_getargs(meta=>$meta, argv=>[qw/--hi k1=1 --hi k2=2/],
+                 args=>{hi=>{k1=>1, k2=>2}},
+                 name=>"int, 2");
+    test_getargs(meta=>$meta, argv=>[qw/--hs k1=x/],
+                 args=>{hs=>{k1=>"x"}},
+                 name=>"str, 1");
+    test_getargs(meta=>$meta, argv=>[qw/--hs k1=x --hs k2=y/],
+                 args=>{hs=>{k1=>"x", k2=>"y"}},
+                 name=>"str, 2");
+    test_getargs(meta=>$meta, argv=>[qw/-S k1=x/],
+                 args=>{hs=>{k1=>"x"}},
+                 name=>"str, one-letter alias, 1");
+};
+
 # test dot
 
 $meta = {

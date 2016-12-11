@@ -1,5 +1,10 @@
 Revision history for Perinci-Sub-GetArgs-Agv
 
+0.79    2016-12-11 (PERLANCAR)
+
+	- [Bugfix] Fix determining simple/array-of-simple/hash-of-simple types.
+
+
 0.78    2016-12-10 (PERLANCAR)
 
 	- [dist] Forgot to bump prereq version Perinci::Sub::GetArgs::Array

@@ -1016,8 +1016,6 @@ sub get_args_from_argv {
                     }
                 }
                 if (!$arg_spec->{greedy} && !$is_simple) {
-                    use DDC; dd $arg_spec;
-                    dd [_is_simple_or_array_of_simple_or_hash_of_simple($arg_spec->{schema}) ];
                   TRY_PARSING_AS_JSON_YAML:
                     {
                         my ($success, $e, $decoded);

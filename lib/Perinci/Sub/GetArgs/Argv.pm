@@ -96,29 +96,15 @@ sub _arg2opt {
 }
 
 # this subroutine checks whether a schema mentions a coercion rule from simple
-# types (e.g. 'str_comma_sep', etc). this subroutine can accept a normalized sah
-# schema, or if $is_resolve_res is set to true, result from
-# Data::Sah::Resolve::resolve_schema
+# types (e.g. 'str_comma_sep', etc).
 sub _is_coercible_from_simple {
-    #my $type;
-    my @csets;
-    if ($_[1]) {
-        # resolve result
-        #$type = $_[0][0];
-        @csets = @{$_[0][1]};
-    } else {
-        # normalized sah schema
-        #$type = $_[0][0];
-        @csets = ($_[0][1]);
-    }
-    for my $cset (@csets) {
-        my $rules = $cset->{'x.perl.coerce_rules'} //
-            $cset->{'x.coerce_rules'};
-        next unless $rules;
-        for my $rule (@$rules) {
-            next unless $rule =~ /\A([^_]+)_/;
-            return 1 if is_simple($1);
-        }
+    my $nsch = shift;
+    my $cset = $nsch->[1] or return 0;
+    my $rules = $cset->{'x.perl.coerce_rules'} // $cset->{'x.coerce_rules'}
+        or return 0;
+    for my $rule (@$rules) {
+        next unless $rule =~ /\A([^_]+)_/;
+        return 1 if is_simple($1);
     }
     0;
 }
@@ -133,7 +119,10 @@ sub _is_simple_or_coercible_from_simple {
 sub _is_simple_or_array_of_simple_or_hash_of_simple {
     my $nsch = shift;
 
-    my ($is_simple, $is_array_of_simple, $is_hash_of_simple, $eltype);
+    my $is_simple = 0;
+    my $is_array_of_simple = 0;
+    my $is_hash_of_simple = 0;
+    my $eltype;
 
     my $type = $nsch->[0];
     my $cset = $nsch->[1];
@@ -148,44 +137,44 @@ sub _is_simple_or_array_of_simple_or_hash_of_simple {
             $cset = $res->[1][0] // {};
         }
 
-        $is_simple = _is_simple_or_coercible_from_simple($nsch);
+        $is_simple = _is_simple_or_coercible_from_simple([$type, $cset]);
         last if $is_simple;
 
         if ($type eq 'array') {
-            my $elsch = $cset->{of} // $cset->{each_elem};
-            last unless $elsch;
-            $elsch = normalize_schema($elsch);
-            $eltype = $elsch->[0];
+            my $elnsch = $cset->{of} // $cset->{each_elem};
+            last unless $elnsch;
+            $elnsch = normalize_schema($elnsch);
+            $eltype = $elnsch->[0];
 
             # if not known as builtin type, then resolve it first
-            unless (is_type($elsch)) {
+            unless (is_type($elnsch)) {
                 require Data::Sah::Resolve;
                 my $res = Data::Sah::Resolve::resolve_schema(
-                    {merge_clause_sets => 0}, $elsch);
-                $elsch = [$res->[0], $res->[1][0] // {}]; # XXX we only take the first clause set
+                    {merge_clause_sets => 0}, $elnsch);
+                $elnsch = [$res->[0], $res->[1][0] // {}]; # XXX we only take the first clause set
                 $eltype = $res->[0];
             }
 
-            $is_array_of_simple = _is_simple_or_coercible_from_simple($elsch);
+            $is_array_of_simple = _is_simple_or_coercible_from_simple($elnsch);
             last;
         }
 
         if ($type eq 'hash') {
-            my $elsch = $cset->{of} // $cset->{each_value} // $cset->{each_elem};
-            last unless $elsch;
-            $elsch = normalize_schema($elsch);
-            $eltype = $elsch->[0];
+            my $elnsch = $cset->{of} // $cset->{each_value} // $cset->{each_elem};
+            last unless $elnsch;
+            $elnsch = normalize_schema($elnsch);
+            $eltype = $elnsch->[0];
 
             # if not known as builtin type, then resolve it first
-            unless (is_type($elsch)) {
+            unless (is_type($elnsch)) {
                 require Data::Sah::Resolve;
                 my $res = Data::Sah::Resolve::resolve_schema(
-                    {merge_clause_sets => 0}, $elsch);
-                $elsch = [$res->[0], $res->[1][0] // {}]; # XXX we only take the first clause set
+                    {merge_clause_sets => 0}, $elnsch);
+                $elnsch = [$res->[0], $res->[1][0] // {}]; # XXX we only take the first clause set
                 $eltype = $res->[0];
             }
 
-            $is_hash_of_simple = _is_simple_or_coercible_from_simple($elsch);
+            $is_hash_of_simple = _is_simple_or_coercible_from_simple($elnsch);
             last;
         }
     }
@@ -1027,6 +1016,8 @@ sub get_args_from_argv {
                     }
                 }
                 if (!$arg_spec->{greedy} && !$is_simple) {
+                    use DDC; dd $arg_spec;
+                    dd [_is_simple_or_array_of_simple_or_hash_of_simple($arg_spec->{schema}) ];
                   TRY_PARSING_AS_JSON_YAML:
                     {
                         my ($success, $e, $decoded);

@@ -1,5 +1,12 @@
 Revision history for Perinci-Sub-GetArgs-Agv
 
+0.80    2016-12-15 (PERLANCAR)
+
+	- Workaround issue in Getopt::Long where gnu_compat disables
+	  bundling as a side effect, so we enable bundling after gnu_compat
+	  (ref: [RT#119165]).
+
+
 0.79    2016-12-11 (PERLANCAR)
 
 	- [Bugfix] Fix determining simple/array-of-simple/hash-of-simple types.

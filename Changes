@@ -1,3 +1,10 @@
+0.81    2017-04-19 (PERLANCAR)
+
+	- No functional changes.
+
+	- [dist] Add missing dependencies to Sah type modules [RT#121166].
+
+
 0.80    2016-12-15 (PERLANCAR)
 
 	- Workaround issue in Getopt::Long where gnu_compat disables

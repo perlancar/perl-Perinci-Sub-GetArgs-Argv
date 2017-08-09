@@ -296,11 +296,12 @@ sub _args2opts {
 
         my $stash = {};
 
-        # why we use coderefs here? due to Getopt::Long's behavior. when
-        # @ARGV=qw() and go_spec is ('foo=s' => \$opts{foo}) then %opts will
-        # become (foo=>undef). but if go_spec is ('foo=s' => sub { $opts{foo} =
-        # $_[1] }) then %opts will become (), which is what we prefer, so we can
-        # later differentiate "unspecified" (exists($opts{foo}) == false) and
+        # why we use coderefs here? first, we use Getopt::Long::EvenLess
+        # (0.84+). second, due to Getopt::Long's behavior: when @ARGV=qw() and
+        # go_spec is ('foo=s' => \$opts{foo}) then %opts will become
+        # (foo=>undef). but if go_spec is ('foo=s' => sub { $opts{foo} = $_[1]
+        # }) then %opts will become (), which is what we prefer, so we can later
+        # differentiate "unspecified" (exists($opts{foo}) == false) and
         # "specified as undef" (exists($opts{foo}) == true but
         # defined($opts{foo}) == false).
 
@@ -331,8 +332,8 @@ sub _args2opts {
                 push @{ $rargs->{$arg} }, $val;
             } elsif ($is_hash_of_simple) {
                 $rargs->{$arg} //= {};
-                $val_set = 1; $val = $_[2];
-                $rargs->{$arg}{$_[1]} = $val;
+                $val_set = 1; my $key; ($key, $val) = $_[2] =~ /\A([^=]+)=(.*)/;
+                $rargs->{$arg}{$key} = $val;
             } else {
                 {
                     my ($success, $e, $decoded);
@@ -922,7 +923,7 @@ _
     },
 };
 sub get_args_from_argv {
-    require Getopt::Long;
+    require Getopt::Long::EvenLess;
 
     my %fargs = @_;
     my $argv       = $fargs{argv} // \@ARGV;
@@ -960,11 +961,17 @@ sub get_args_from_argv {
     #$log->tracef("GetOptions spec: %s", \@go_spec);
     {
         local $SIG{__WARN__} = sub{} if !$strict;
-        my $old_go_conf = Getopt::Long::Configure(
+        my $old_go_conf = Getopt::Long::EvenLess::Configure(
             $strict ? "no_pass_through" : "pass_through",
-            "no_ignore_case", "permute", "no_getopt_compat", "gnu_compat", "bundling");
-        my $res = Getopt::Long::GetOptionsFromArray($argv, %$go_spec);
-        Getopt::Long::Configure($old_go_conf);
+            "no_ignore_case", "permute", "no_getopt_compat", "gnu_compat", "bundling",
+        );
+        my $res;
+        eval { $res = Getopt::Long::EvenLess::GetOptionsFromArray($argv, %$go_spec) };
+        if ($@) {
+            warn $@;
+            $res = 0;
+        }
+        Getopt::Long::EvenLess::Configure($old_go_conf);
         unless ($res) {
             return [500, "GetOptions failed"] if $strict;
         }

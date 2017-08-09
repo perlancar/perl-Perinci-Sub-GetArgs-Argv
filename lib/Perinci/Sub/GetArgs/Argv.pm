@@ -245,7 +245,7 @@ sub _opt2ospec {
                 "$opt-base64=s", {opts=>["$opt-base64"], desttype=>"", type=>"s"}, {is_base64=>1},
             );
         } else {
-            my $t = ($type eq 'int' ? 'i' : $type eq 'float' ? 'f' : 's') .
+            my $t = ($type eq 'int' ? 's' : $type eq 'float' ? 's' : 's') .
                 ($isaos ? '@' : $ishos ? '%' : '');
             push @res, ("$opt=$t", {opts=>[$opt], desttype=>"", type=>$t}, undef);
         }

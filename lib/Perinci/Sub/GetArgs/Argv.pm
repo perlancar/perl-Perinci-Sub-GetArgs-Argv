@@ -997,7 +997,7 @@ sub get_args_from_argv {
                 my ($is_simple, $is_array_of_simple, $is_hash_of_simple, $type, $cset, $eltype) =
                     _is_simple_or_array_of_simple_or_hash_of_simple($arg_spec->{schema});
 
-                if ($arg_spec->{greedy} && ref($val) eq 'ARRAY' &&
+                if (($arg_spec->{slurpy} // $arg_spec->{greedy}) && ref($val) eq 'ARRAY' &&
                         !$is_array_of_simple && !$is_hash_of_simple) {
                     my $i = 0;
                     for (@$val) {
@@ -1026,7 +1026,7 @@ sub get_args_from_argv {
                         $i++;
                     }
                 }
-                if (!$arg_spec->{greedy} && !$is_simple) {
+                if (!($arg_spec->{slurpy} // $arg_spec->{greedy}) && !$is_simple) {
                   TRY_PARSING_AS_JSON_YAML:
                     {
                         my ($success, $e, $decoded);
@@ -1053,7 +1053,7 @@ sub get_args_from_argv {
                 $rargs->{$name} = $val;
                 # we still call cmdline_on_getopt for this
                 if ($arg_spec->{cmdline_on_getopt}) {
-                    if ($arg_spec->{greedy}) {
+                    if ($arg_spec->{slurpy} // $arg_spec->{greedy}) {
                         $arg_spec->{cmdline_on_getopt}->(
                             arg=>$name, fqarg=>$name, value=>$_, args=>$rargs,
                             opt=>undef, # this marks that value is retrieved from cmdline arg

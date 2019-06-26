@@ -227,12 +227,24 @@ sub _opt2ospec {
         my $ishos = $ishos[$i];
 
         if ($type eq 'bool') {
-            if (length($opt) == 1 || $cset->{is}) {
+            if (length $opt == 1) {
                 # single-letter option like -b doesn't get --nob.
-                # [bool=>{is=>1}] also means it's a flag and should not get
+                push @res, ($opt, {opts=>[$opt]}), undef;
+            } elsif ($cset->{is} || $cset->{is_true}) {
+                # an always-true bool ('true' or [bool => {is=>1}] or
+                # [bool=>{is_true=>1}] also means it's a flag and should not get
                 # --nofoo.
                 push @res, ($opt, {opts=>[$opt]}), undef;
+            } elsif ((defined $cset->{is} && !$cset->{is}) ||
+                         (defined $cset->{is_true} && !$cset->{is_true})) {
+                # an always-false bool ('false' or [bool => {is=>0}] or
+                # [bool=>{is_true=>0}] also means it's a flag and should only be
+                # getting --nofoo.
+                for (negations_for_option($opt)) {
+                    push @res, $_, {opts=>[$_]}, {is_neg=>1, pos_opts=>[$opt]};
+                }
             } else {
+                # a regular bool gets --foo as well as --nofoo
                 my @negs = negations_for_option($opt);
                 push @res, $opt, {opts=>[$opt]}, {is_neg=>0, neg_opts=>\@negs};
                 for (@negs) {

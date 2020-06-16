@@ -3,6 +3,7 @@
 use 5.010001;
 use strict;
 use warnings;
+use Test::Deep;
 use Test::More 0.98;
 use Test::Needs;
 
@@ -20,7 +21,7 @@ subtest simple => sub {
         name => "based on simple type",
         test_needs => ["Sah::Schema::posint"],
         schema => "posint",
-        result => [1, 0, 0, "int", {min=>1, summary=>"Positive integer (1, 2, ...)"}, undef],
+        result => [1, 0, 0, "int", superhashof({min=>1}), undef],
     );
     test_is_simple_or_aos_or_hos(
         name => "non-simple type",
@@ -45,7 +46,7 @@ subtest "array of simple" => sub {
         name => "based on simple types",
         test_needs => ["Sah::Schema::aos"],
         schema => "aos",
-        result => [0, 1, 0, "array", {of=>["str",{},{}], summary=>"Array of strings"}, "str"],
+        result => [0, 1, 0, "array", superhashof({of=>["str",{req=>1},{}]}), "str"],
     );
     test_is_simple_or_aos_or_hos(
         name => "array of (simple types)",
@@ -81,7 +82,7 @@ subtest "hash of simple" => sub {
         name => "based on simple types",
         test_needs => ["Sah::Schema::hos"],
         schema => "hos",
-        result => [0, 0, 1, "hash", {of=>["str",{},{}], summary=>"Hash of strings"}, "str"],
+        result => [0, 0, 1, "hash", superhashof({of=>["str",{req=>1},{}]}), "str"],
     );
     test_is_simple_or_aos_or_hos(
         name => "hash of (simple types)",
@@ -123,7 +124,7 @@ sub test_is_simple_or_aos_or_hos {
         # remove description first
         delete $res[4]{description};
 
-        is_deeply(\@res, $args{result}, "result")
+        cmp_deeply(\@res, $args{result}, "result")
             or diag explain \@res;
     };
 }

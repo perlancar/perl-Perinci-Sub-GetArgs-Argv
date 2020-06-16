@@ -30,7 +30,7 @@ subtest simple => sub {
     );
     test_is_simple_or_aos_or_hos(
         name => "coercible from simple type",
-        test_needs => ["Data::Sah::Coerce::perl::array::str_comma_sep"],
+        test_needs => ["Data::Sah::Coerce::perl::To_array::From_str::comma_sep"],
         schema => ["array", 'x.perl.coerce_rules' => ['str_comma_sep']],
         result => [1, 0, 0, "array", {'x.perl.coerce_rules'=>['str_comma_sep']}, undef],
     );
@@ -66,7 +66,7 @@ subtest "array of simple" => sub {
     );
     test_is_simple_or_aos_or_hos(
         name => "array of (coercible from simple type)",
-        test_needs => ["Data::Sah::Coerce::perl::array::str_comma_sep"],
+        test_needs => ["Data::Sah::Coerce::perl::To_array::From_str::comma_sep"],
         schema => ["array", of=>["array", 'x.perl.coerce_rules' => ['str_comma_sep']]],
         result => [0, 1, 0, "array", {of=>["array", 'x.perl.coerce_rules'=>['str_comma_sep']]}, "array"],
     );
@@ -102,7 +102,7 @@ subtest "hash of simple" => sub {
     );
     test_is_simple_or_aos_or_hos(
         name => "hash of (coercible from simple type)",
-        test_needs => ["Data::Sah::Coerce::perl::array::str_comma_sep"],
+        test_needs => ["Data::Sah::Coerce::perl::To_array::From_str::comma_sep"],
         schema => ["hash", of=>["array", 'x.perl.coerce_rules' => ['str_comma_sep']]],
         result => [0, 0, 1, "hash", {of=>["array", 'x.perl.coerce_rules'=>['str_comma_sep']]}, "array"],
     );

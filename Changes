@@ -1,3 +1,8 @@
+0.844   2020-06-16  Released-By: PERLANCAR; Urgency: medium
+
+	- Fix failing tests due to schema changes [RT#132716].
+
+
 0.843   2019-06-26  Released-By: PERLANCAR
 
 	- Always-false bool (e.g. 'false' or [bool=>{is_true=>0}] or

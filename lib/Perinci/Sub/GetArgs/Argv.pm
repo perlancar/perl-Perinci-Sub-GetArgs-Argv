@@ -1,6 +1,8 @@
 package Perinci::Sub::GetArgs::Argv;
 
+# AUTHORITY
 # DATE
+# DIST
 # VERSION
 
 use 5.010001;
@@ -492,6 +494,7 @@ sub _args2opts {
                         $go_spec->{$alospec} = $handler;
                     }
                     $specmeta->{$alospec} = {
+                        (summary   => $alspec->{summary}) x !!defined($alspec->{summary}),
                         alias     => $al,
                         is_alias  => 1,
                         alias_for => $ospec,

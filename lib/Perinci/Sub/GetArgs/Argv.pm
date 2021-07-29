@@ -101,8 +101,8 @@ sub _arg2opt {
 # types (e.g. 'str_comma_sep', etc).
 sub _is_coercible_from_simple {
     my $nsch = shift;
-    my $cset = $nsch->[1] or return 0;
-    my $rules = $cset->{'x.perl.coerce_rules'} // $cset->{'x.coerce_rules'}
+    my $clset = $nsch->[1] or return 0;
+    my $rules = $clset->{'x.perl.coerce_rules'} // $clset->{'x.coerce_rules'}
         or return 0;
     for my $rule (@$rules) {
         next unless $rule =~ /\A([^_]+)_/;
@@ -127,23 +127,23 @@ sub _is_simple_or_array_of_simple_or_hash_of_simple {
     my $eltype;
 
     my $type = $nsch->[0];
-    my $cset = $nsch->[1];
+    my $clset = $nsch->[1];
 
     {
         # if not known as builtin type, then resolve it first
         unless (is_type($nsch)) {
             require Data::Sah::Resolve;
             my $res = Data::Sah::Resolve::resolve_schema(
-                {merge_clause_sets => 0}, $nsch);
-            $type = $res->[0];
-            $cset = $res->[1][0] // {};
+                {schema_is_normalized=>1}, $nsch);
+            $type  = $res->{type};
+            $clset = $res->{clsets_after_type}[0] // {};
         }
 
-        $is_simple = _is_simple_or_coercible_from_simple([$type, $cset]);
+        $is_simple = _is_simple_or_coercible_from_simple([$type, $clset]);
         last if $is_simple;
 
         if ($type eq 'array') {
-            my $elnsch = $cset->{of} // $cset->{each_elem};
+            my $elnsch = $clset->{of} // $clset->{each_elem};
             last unless $elnsch;
             $elnsch = normalize_schema($elnsch);
             $eltype = $elnsch->[0];
@@ -152,9 +152,9 @@ sub _is_simple_or_array_of_simple_or_hash_of_simple {
             unless (is_type($elnsch)) {
                 require Data::Sah::Resolve;
                 my $res = Data::Sah::Resolve::resolve_schema(
-                    {merge_clause_sets => 0}, $elnsch);
-                $elnsch = [$res->[0], $res->[1][0] // {}]; # XXX we only take the first clause set
-                $eltype = $res->[0];
+                    {schema_is_normalized=>1}, $elnsch);
+                $elnsch = [$res->{type}, $res->{clsets_after_type}[0] // {}]; # XXX we only take the first clause set
+                $eltype = $res->{type};
             }
 
             $is_array_of_simple = _is_simple_or_coercible_from_simple($elnsch);
@@ -162,7 +162,7 @@ sub _is_simple_or_array_of_simple_or_hash_of_simple {
         }
 
         if ($type eq 'hash') {
-            my $elnsch = $cset->{of} // $cset->{each_value} // $cset->{each_elem};
+            my $elnsch = $clset->{of} // $clset->{each_value} // $clset->{each_elem};
             last unless $elnsch;
             $elnsch = normalize_schema($elnsch);
             $eltype = $elnsch->[0];
@@ -171,9 +171,9 @@ sub _is_simple_or_array_of_simple_or_hash_of_simple {
             unless (is_type($elnsch)) {
                 require Data::Sah::Resolve;
                 my $res = Data::Sah::Resolve::resolve_schema(
-                    {merge_clause_sets => 0}, $elnsch);
-                $elnsch = [$res->[0], $res->[1][0] // {}]; # XXX we only take the first clause set
-                $eltype = $res->[0];
+                    {schema_is_normalized=>1}, $elnsch);
+                $elnsch = [$res->{type}, $res->{clsets_after_type}[0] // {}]; # XXX we only take the first clause set
+                $eltype = $res->{type};
             }
 
             $is_hash_of_simple = _is_simple_or_coercible_from_simple($elnsch);
@@ -182,7 +182,7 @@ sub _is_simple_or_array_of_simple_or_hash_of_simple {
     }
 
     #{ no warnings 'uninitialized'; say "D:$nsch->[0]: is_simple=<$is_simple>, is_array_of_simple=<$is_array_of_simple>, is_hash_of_simple=<$is_hash_of_simple>, type=<$type>, eltype=<$eltype>" };
-    ($is_simple, $is_array_of_simple, $is_hash_of_simple, $type, $cset, $eltype);
+    ($is_simple, $is_array_of_simple, $is_hash_of_simple, $type, $clset, $eltype);
 }
 
 # return one or more triplets of Getopt::Long option spec, its parsed structure,
@@ -190,7 +190,7 @@ sub _is_simple_or_array_of_simple_or_hash_of_simple {
 # parse_getopt_long_opt_spec().
 sub _opt2ospec {
     my ($opt, $schema, $arg_spec) = @_;
-    my ($is_simple, $is_array_of_simple, $is_hash_of_simple, $type, $cset, $eltype) =
+    my ($is_simple, $is_array_of_simple, $is_hash_of_simple, $type, $clset, $eltype) =
         _is_simple_or_array_of_simple_or_hash_of_simple($schema);
 
     my (@opts, @types, @isaos, @ishos);
@@ -232,13 +232,13 @@ sub _opt2ospec {
             if (length $opt == 1) {
                 # single-letter option like -b doesn't get --nob.
                 push @res, ($opt, {opts=>[$opt]}), undef;
-            } elsif ($cset->{is} || $cset->{is_true}) {
+            } elsif ($clset->{is} || $clset->{is_true}) {
                 # an always-true bool ('true' or [bool => {is=>1}] or
                 # [bool=>{is_true=>1}] also means it's a flag and should not get
                 # --nofoo.
                 push @res, ($opt, {opts=>[$opt]}), undef;
-            } elsif ((defined $cset->{is} && !$cset->{is}) ||
-                         (defined $cset->{is_true} && !$cset->{is_true})) {
+            } elsif ((defined $clset->{is} && !$clset->{is}) ||
+                         (defined $clset->{is_true} && !$clset->{is_true})) {
                 # an always-false bool ('false' or [bool => {is=>0}] or
                 # [bool=>{is_true=>0}] also means it's a flag and should only be
                 # getting --nofoo.
@@ -289,12 +289,12 @@ sub _args2opts {
         next if grep { $_ eq 'hidden' || $_ eq 'hidden-cli' }
             @{ $arg_spec->{tags} // [] };
         my $sch      = $arg_spec->{schema} // ['any', {}];
-        my ($is_simple, $is_array_of_simple, $is_hash_of_simple, $type, $cset, $eltype) =
+        my ($is_simple, $is_array_of_simple, $is_hash_of_simple, $type, $clset, $eltype) =
             _is_simple_or_array_of_simple_or_hash_of_simple($sch);
 
         # XXX normalization of 'of' clause should've been handled by sah itself
-        if ($type eq 'array' && $cset->{of}) {
-            $cset->{of} = normalize_schema($cset->{of});
+        if ($type eq 'array' && $clset->{of}) {
+            $clset->{of} = normalize_schema($clset->{of});
         }
         my $opt = _arg2opt($fqarg);
         if ($seen_opts->{$opt}) {
@@ -1009,7 +1009,7 @@ sub get_args_from_argv {
                     return [400, "You specified option --$name but also ".
                                 "argument #".$arg_spec->{pos}] if $strict;
                 }
-                my ($is_simple, $is_array_of_simple, $is_hash_of_simple, $type, $cset, $eltype) =
+                my ($is_simple, $is_array_of_simple, $is_hash_of_simple, $type, $clset, $eltype) =
                     _is_simple_or_array_of_simple_or_hash_of_simple($arg_spec->{schema});
 
                 if (($arg_spec->{slurpy} // $arg_spec->{greedy}) && ref($val) eq 'ARRAY' &&

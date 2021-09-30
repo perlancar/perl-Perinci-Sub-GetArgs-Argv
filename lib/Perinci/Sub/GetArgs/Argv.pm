@@ -1025,7 +1025,7 @@ sub get_args_from_argv {
                                     $_ = $decoded;
                                     last TRY_PARSING_AS_JSON_YAML;
                                 } else {
-                                    warn "Failed trying to parse argv #$i as JSON: $e";
+                                    #warn "Failed trying to parse argv #$i as JSON: $e";
                                 }
                             }
                             if ($per_arg_yaml) {
@@ -1034,7 +1034,7 @@ sub get_args_from_argv {
                                     $_ = $decoded;
                                     last TRY_PARSING_AS_JSON_YAML;
                                 } else {
-                                    warn "Failed trying to parse argv #$i as YAML: $e";
+                                    #warn "Failed trying to parse argv #$i as YAML: $e";
                                 }
                             }
                         }
@@ -1051,7 +1051,7 @@ sub get_args_from_argv {
                                 $val = $decoded;
                                 last TRY_PARSING_AS_JSON_YAML;
                             } else {
-                                warn "Failed trying to parse argv #$arg_spec->{pos} as JSON: $e";
+                                #warn "Failed trying to parse argv #$arg_spec->{pos} as JSON: $e";
                             }
                         }
                         if ($per_arg_yaml) {
@@ -1060,7 +1060,7 @@ sub get_args_from_argv {
                                 $val = $decoded;
                                 last TRY_PARSING_AS_JSON_YAML;
                             } else {
-                                warn "Failed trying to parse argv #$arg_spec->{pos} as YAML: $e";
+                                #warn "Failed trying to parse argv #$arg_spec->{pos} as YAML: $e";
                             }
                         }
                     }

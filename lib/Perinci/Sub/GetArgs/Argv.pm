@@ -1,10 +1,5 @@
 package Perinci::Sub::GetArgs::Argv;
 
-# AUTHORITY
-# DATE
-# DIST
-# VERSION
-
 use 5.010001;
 use strict;
 use warnings;
@@ -17,6 +12,11 @@ use Getopt::Long::Util qw(parse_getopt_long_opt_spec);
 use List::Util qw(first);
 use Perinci::Sub::GetArgs::Array qw(get_args_from_array);
 use Perinci::Sub::Util qw(err);
+
+# AUTHORITY
+# DATE
+# DIST
+# VERSION
 
 use Exporter;
 our @ISA = qw(Exporter);

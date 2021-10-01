@@ -1,10 +1,5 @@
 package Perinci::Sub::GetArgs::Argv;
 
-# AUTHORITY
-# DATE
-# DIST
-# VERSION
-
 use 5.010001;
 use strict;
 use warnings;
@@ -17,6 +12,11 @@ use Getopt::Long::Util qw(parse_getopt_long_opt_spec);
 use List::Util qw(first);
 use Perinci::Sub::GetArgs::Array qw(get_args_from_array);
 use Perinci::Sub::Util qw(err);
+
+# AUTHORITY
+# DATE
+# DIST
+# VERSION
 
 use Exporter;
 our @ISA = qw(Exporter);
@@ -1025,7 +1025,7 @@ sub get_args_from_argv {
                                     $_ = $decoded;
                                     last TRY_PARSING_AS_JSON_YAML;
                                 } else {
-                                    warn "Failed trying to parse argv #$i as JSON: $e";
+                                    #warn "Failed trying to parse argv #$i as JSON: $e";
                                 }
                             }
                             if ($per_arg_yaml) {
@@ -1034,7 +1034,7 @@ sub get_args_from_argv {
                                     $_ = $decoded;
                                     last TRY_PARSING_AS_JSON_YAML;
                                 } else {
-                                    warn "Failed trying to parse argv #$i as YAML: $e";
+                                    #warn "Failed trying to parse argv #$i as YAML: $e";
                                 }
                             }
                         }
@@ -1051,7 +1051,7 @@ sub get_args_from_argv {
                                 $val = $decoded;
                                 last TRY_PARSING_AS_JSON_YAML;
                             } else {
-                                warn "Failed trying to parse argv #$arg_spec->{pos} as JSON: $e";
+                                #warn "Failed trying to parse argv #$arg_spec->{pos} as JSON: $e";
                             }
                         }
                         if ($per_arg_yaml) {
@@ -1060,7 +1060,7 @@ sub get_args_from_argv {
                                 $val = $decoded;
                                 last TRY_PARSING_AS_JSON_YAML;
                             } else {
-                                warn "Failed trying to parse argv #$arg_spec->{pos} as YAML: $e";
+                                #warn "Failed trying to parse argv #$arg_spec->{pos} as YAML: $e";
                             }
                         }
                     }

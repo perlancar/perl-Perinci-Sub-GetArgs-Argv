@@ -1086,8 +1086,11 @@ sub get_args_from_argv {
 
     # 4. check missing required args
 
-    my %missing_args;
-    for my $arg (keys %$args_prop) {
+    my %missing_args; # value = order
+    my $i = 0;
+    for my $arg (sort {
+        (($args_prop->{$a}{pos}//9999) <=> ($args_prop->{$b}{pos}//9999)) ||
+            ($a cmp $b) } keys %$args_prop) {
         my $arg_spec = $args_prop->{$arg};
         if (!exists($rargs->{$arg})) {
             next unless $arg_spec->{req};
@@ -1096,7 +1099,7 @@ sub get_args_from_argv {
                 next if $on_missing->(arg=>$arg, args=>$rargs, spec=>$arg_spec);
             }
             next if exists $rargs->{$arg};
-            $missing_args{$arg} = 1;
+            $missing_args{$arg} = ++$i;
         }
     }
 
@@ -1119,7 +1122,7 @@ sub get_args_from_argv {
     #$log->tracef("<- get_args_from_argv(), args=%s, remaining argv=%s",
     #             $rargs, $argv);
     [200, "OK", $rargs, {
-        "func.missing_args" => [sort keys %missing_args],
+        "func.missing_args" => [sort {$missing_args{$a} <=> $missing_args{$b} } keys %missing_args],
         "func.gen_getopt_long_spec_result" => $genres,
     }];
 }

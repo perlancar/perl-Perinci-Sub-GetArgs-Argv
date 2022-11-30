@@ -337,10 +337,7 @@ sub _args2opts {
                 }
             };
 
-            if ($is_simple) {
-                $val_set = 1; $val = $_[1];
-                $rargs->{$arg} = $val;
-            } elsif ($is_array_of_simple) {
+            if ($is_array_of_simple) {
                 $rargs->{$arg} //= [];
                 $val_set = 1; $val = $_[1];
                 push @{ $rargs->{$arg} }, $val;
@@ -349,22 +346,8 @@ sub _args2opts {
                 $val_set = 1; $val = $_[2];
                 $rargs->{$arg}{$_[1]} = $val;
             } else {
-                {
-                    my ($success, $e, $decoded);
-                    ($success, $e, $decoded) = _parse_json($_[1]);
-                    if ($success) {
-                        $val_set = 1; $val = $decoded;
-                        $rargs->{$arg} = $val;
-                        last;
-                    }
-                    ($success, $e, $decoded) = _parse_yaml($_[1]);
-                    if ($success) {
-                        $val_set = 1; $val = $decoded;
-                        $rargs->{$arg} = $val;
-                        last;
-                    }
-                    die "Invalid YAML/JSON in arg '$fqarg'";
-                }
+                $val_set = 1; $val = $_[1];
+                $rargs->{$arg} = $val;
             }
             if ($val_set && $arg_spec->{cmdline_on_getopt}) {
                 $arg_spec->{cmdline_on_getopt}->(
